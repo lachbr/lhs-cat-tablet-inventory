@@ -1,5 +1,6 @@
 import sys
-import core
+
+from panda3d import core
 
 from src.shared.Consts import *
 

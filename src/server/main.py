@@ -1,6 +1,8 @@
-import core
+from panda3d import core
 
 from src.shared.Consts import *
+
+import pyad
 
 class Client:
     
@@ -65,15 +67,31 @@ class Server:
         if not client:
             print("Received datagram from unknown client")
             return
-            
+        
         dgi = core.DatagramIterator(dg)
         
         msg_type = dgi.getUint16()
         
+        if client.client_type == CLIENT_UNIDENTIFIED:
+            self.__handle_datagram_unidentified(connection, client, dgi, msg_type)
+        elif client.client_type == CLIENT_STUDENT:
+            self.__handle_datagram_student(connection, client, dgi, msg_type)
+        elif client.client_type == CLIENT_NET_ASSISTANT:
+            self.__handle_datagram_netassistant(connection, client, dgi, msg_type)
+        else:
+            print("Received datagram from unknown client type")
+            
+    def __handle_datagram_unidentified(self, connection, client, dgi, msg_type):
         if msg_type == MSG_CLIENT_IDENTIFY:
             client_type = dgi.getUint8()
             print("Client %s identified as %i" % (client.connection_id, client_type))
             client.identify(client_type)
+            
+    def __handle_datagram_student(self, connection, client, dgi, msg_type):
+        pass
+        
+    def __handle_datagram_netassistant(self, connection, client, dgi, msg_type):
+        pass
     
     def run(self):
         self.__check_connections()

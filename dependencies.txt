@@ -1,0 +1,6 @@
+via pip:
+
+pip install panda3d==1.10.3
+pip install pyqt5
+pip install pywin32
+pip install pyad
