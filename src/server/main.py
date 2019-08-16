@@ -1,8 +1,6 @@
 import core
 
-CLIENT_UNIDENTIFIED     = 0
-CLIENT_NET_ASSISTANT    = 1
-CLIENT_STUDENT          = 2
+from src.shared.Consts import *
 
 class Client:
     
@@ -62,7 +60,20 @@ class Server:
             self.mgr.close_connection(lost_conn)
                 
     def handle_datagram(self, dg):
-        pass
+        connection = dg.get_connection()
+        client = self.clients.get(str(connection.this), None)
+        if not client:
+            print("Received datagram from unknown client")
+            return
+            
+        dgi = core.DatagramIterator(dg)
+        
+        msg_type = dgi.getUint16()
+        
+        if msg_type == MSG_CLIENT_IDENTIFY:
+            client_type = dgi.getUint8()
+            print("Client %s identified as %i" % (client.connection_id, client_type))
+            client.identify(client_type)
     
     def run(self):
         self.__check_connections()
