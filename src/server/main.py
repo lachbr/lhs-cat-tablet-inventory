@@ -2,7 +2,7 @@ from panda3d import core
 
 from src.shared.Consts import *
 
-import pyad
+from pyad import *
 
 class Client:
     
@@ -27,6 +27,17 @@ class Server:
         self.writer = core.ConnectionWriter(self.mgr, 1)
         self.socket = self.mgr.open_TCP_server_rendezvous('127.0.0.1', 7035, 10)
         self.listener.add_connection(self.socket)
+        
+        domain = "cat.pcsb.org"
+        user = "net.assistant"
+        password = "You can't handle the truth!"
+        pyad.set_defaults(ldap_server = domain, username = user, password = password)
+        
+        testgroup = adgroup.ADGroup.from_cn("AllCatStudents")
+        members = testgroup.get_members()
+        for mem in members:
+            print(mem)
+        print(dir(testgroup))
         
         self.clients = {}
         
