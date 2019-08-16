@@ -4,6 +4,9 @@ from panda3d import core
 
 from src.shared.Consts import *
 
+from PyQt5.QtWidgets import QApplication
+from PyQt5 import QtCore
+
 class ServerConnection:
     
     def __init__(self, address, port):
@@ -36,8 +39,20 @@ class ServerConnection:
         pass
         
     def run(self):
+        print("Run server")
         self.__check_datagrams()
+        
+class ClientApp(QApplication):
 
-conn = ServerConnection('127.0.0.1', 7035)
-while True:
-    conn.run()
+    def __init__(self):
+        QApplication.__init__(self, [])
+        
+        self.serverConnection = ServerConnection('127.0.0.1', 7035)
+        # Timer which ticks the connection to the server
+        self.serverTimer = QtCore.QTimer()
+        self.serverTimer.timeout.connect(self.serverConnection.run)
+        self.serverTimer.setSingleShot(False)
+        self.serverTimer.start(0)
+
+app = ClientApp()
+app.exec_()

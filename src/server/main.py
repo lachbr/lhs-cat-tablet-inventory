@@ -42,7 +42,7 @@ class Server:
                 self.clients[str(new_conn.this)] = Client(new_conn, rendezvous)
                 self.reader.add_connection(new_conn)
                 print("IP Address: %s" % new_conn.get_address())
-                print("ConnectionID: %s" % new_conn.this)
+                print("Connection ID: %s" % new_conn.this)
                 
     def __check_datagrams(self):
         if self.reader.data_available():
