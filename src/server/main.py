@@ -2,7 +2,7 @@ from panda3d import core
 
 from src.shared.Consts import *
 
-from pyad import *
+#from pyad import *
 
 class Client:
     
@@ -31,13 +31,13 @@ class Server:
         domain = "cat.pcsb.org"
         user = "net.assistant"
         password = "You can't handle the truth!"
-        pyad.set_defaults(ldap_server = domain, username = user, password = password)
+        #pyad.set_defaults(ldap_server = domain, username = user, password = password)
         
-        testgroup = adgroup.ADGroup.from_cn("AllCatStudents")
-        members = testgroup.get_members()
-        for mem in members:
-            print(mem)
-        print(dir(testgroup))
+        #testgroup = adgroup.ADGroup.from_cn("AllCatStudents")
+        #members = testgroup.get_members()
+        #for mem in members:
+        #    print(mem)
+        #print(dir(testgroup))
         
         self.clients = {}
         
@@ -81,7 +81,7 @@ class Server:
         
         dgi = core.DatagramIterator(dg)
         
-        msg_type = dgi.getUint16()
+        msg_type = dgi.get_uint16()
         
         if client.client_type == CLIENT_UNIDENTIFIED:
             self.__handle_datagram_unidentified(connection, client, dgi, msg_type)
@@ -94,12 +94,27 @@ class Server:
             
     def __handle_datagram_unidentified(self, connection, client, dgi, msg_type):
         if msg_type == MSG_CLIENT_IDENTIFY:
-            client_type = dgi.getUint8()
+            client_type = dgi.get_uint8()
             print("Client %s identified as %i" % (client.connection_id, client_type))
             client.identify(client_type)
             
     def __handle_datagram_student(self, connection, client, dgi, msg_type):
-        pass
+        if msg_type == MSG_CLIENT_LOOKUP_TABLET:
+            pcsb_tag = dgi.get_string()
+            
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_LOOKUP_TABLET_RESP)
+            dg.add_uint8(0)
+            dg.add_string("598253")
+            dg.add_string("Dell Latitude 5295")
+            dg.add_string("Brian Lach")
+            dg.add_string("12")
+            self.writer.send(dg, connection)
+        elif msg_type == MSG_CLIENT_SUBMIT_ISSUE:
+            pcsb_tag = dgi.get_string()
+            incident_desc = dgi.get_string()
+            incident_date = dgi.get_string()
+            problem_desc = dgi.get_string()
         
     def __handle_datagram_netassistant(self, connection, client, dgi, msg_type):
         pass
