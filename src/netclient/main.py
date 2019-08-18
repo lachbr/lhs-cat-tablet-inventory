@@ -1,6 +1,8 @@
 from src.shared.base_server_connection import BaseServerConnection
 from src.shared.Consts import *
 
+from panda3d import core
+
 import sys
 from datetime import datetime
 
@@ -12,7 +14,11 @@ class ServerConnection(BaseServerConnection):
     def get_identity(self):
         return CLIENT_NET_ASSISTANT
         
-from PyQt5 import QtWidgets, QtCore
+    def handle_datagram(self, dgi, msg_type):
+        if msg_type == MSG_SERVER_GET_ALL_TABLETS_RESP:
+            g_main_window.handle_get_all_tablets_resp(dgi)
+        
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class ClientWindow(QtWidgets.QMainWindow):
     
@@ -30,7 +36,31 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.blink_second = 0
         self.blink_state = 0
         
+        self.__request_all_tablets()
+        
+    def __request_all_tablets(self):
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_GET_ALL_TABLETS)
+        g_server_connection.send(dg)
+        
+    def handle_get_all_tablets_resp(self, dgi):
+        num_tablets = dgi.get_uint16()
+        for i in range(num_tablets):
+            pcsb = dgi.get_string()
+            device = dgi.get_string()
+            serial = dgi.get_string()
+            issue = dgi.get_string()
+            name = dgi.get_string()
+            
+            self.ui.tabletView.insertRow(i)
+            self.ui.tabletView.setItem(i, 0, QtWidgets.QTableWidgetItem(pcsb))
+            self.ui.tabletView.setItem(i, 1, QtWidgets.QTableWidgetItem(device))
+            self.ui.tabletView.setItem(i, 2, QtWidgets.QTableWidgetItem(serial))
+            self.ui.tabletView.setItem(i, 3, QtWidgets.QTableWidgetItem(issue))
+            self.ui.tabletView.setItem(i, 4, QtWidgets.QTableWidgetItem(name))
+        
     def __get_block(self, now):
+        now_time = now.time()
         block_ranges = {
             "1"     : ("7:10 AM", "8:40 AM"),
             "2"     : ("8:45 AM", "10:15 AM"),
@@ -41,9 +71,9 @@ class ClientWindow(QtWidgets.QMainWindow):
         
         block = "None"
         for blockName, startEnd in block_ranges.items():
-            startDt = datetime.strptime(startEnd[0], "%I:%M %p")
-            endDt = datetime.strptime(startEnd[1], "%I:%M %p")
-            if now >= startDt and now < endDt:
+            startDt = datetime.strptime(startEnd[0], "%I:%M %p").time()
+            endDt = datetime.strptime(startEnd[1], "%I:%M %p").time()
+            if now_time >= startDt and now_time < endDt:
                 block = blockName
                 break
                 

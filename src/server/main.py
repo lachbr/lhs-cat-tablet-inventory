@@ -120,7 +120,18 @@ class Server:
             print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc))
         
     def __handle_datagram_netassistant(self, connection, client, dgi, msg_type):
-        pass
+        if msg_type == MSG_CLIENT_GET_ALL_TABLETS:
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_GET_ALL_TABLETS_RESP)
+            
+            dg.add_uint16(3) # tablet count
+            for i in range(3):
+                dg.add_string("044-0532")
+                dg.add_string("Dell Latitude 5295")
+                dg.add_string("623523")
+                dg.add_string("No")
+                dg.add_string("Brian Lach")
+            self.writer.send(dg, connection)
     
     def run(self):
         self.__check_connections()
