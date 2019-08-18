@@ -3,6 +3,7 @@ import sys
 from panda3d import core
 
 from src.shared.Consts import *
+from src.shared.base_server_connection import BaseServerConnection
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PyQt5 import QtCore
@@ -10,47 +11,14 @@ from PyQt5 import QtCore
 g_server_connection = None
 g_main_window = None
 
-class ServerConnection:
+class ServerConnection(BaseServerConnection):
     
-    def __init__(self, address, port):
-        self.mgr = core.QueuedConnectionManager()
-        self.reader = core.QueuedConnectionReader(self.mgr, 1)
-        self.writer = core.ConnectionWriter(self.mgr, 1)
-        self.address = address
-        self.port = port
-        
-        self.connection = self.mgr.open_TCP_client_connection(self.address, self.port, 0)
-        if not self.connection:
-            print("ERROR: Can't connect")
-            sys.exit(1)
-        self.reader.add_connection(self.connection)
-        self.identify()
-        
-    def send(self, dg):
-        self.writer.send(dg, self.connection)
-        
-    def identify(self):
-        dg = core.Datagram()
-        dg.add_uint16(MSG_CLIENT_IDENTIFY)
-        dg.add_uint8(CLIENT_STUDENT)
-        self.writer.send(dg, self.connection)
-        
-    def __check_datagrams(self):
-        if self.reader.data_available():
-            dg = core.Datagram()
-            if self.reader.get_data(dg):
-                self.handle_datagram(dg)
+    def get_identity(self):
+        return CLIENT_STUDENT
                 
-    def handle_datagram(self, dg):
-        dgi = core.DatagramIterator(dg)
-        
-        msg_type = dgi.get_uint16()
-        
+    def handle_datagram(self, dgi, msg_type):
         if msg_type == MSG_SERVER_LOOKUP_TABLET_RESP:
             g_main_window.handle_lookup_tablet_response(dgi)
-        
-    def run(self):
-        self.__check_datagrams()
         
 class ClientWindow(QMainWindow):
     
@@ -62,6 +30,7 @@ class ClientWindow(QMainWindow):
         self.ui.setupUi(self)
         self.ui.submitBtn.pressed.connect(self.__handle_press_submit)
         self.ui.pcsbTagTextBox.returnPressed.connect(self.__handle_pcsbtag_submit)
+        self.ui.resetButton.pressed.connect(self.__reset)
         
     def __handle_pcsbtag_submit(self):
         dg = core.Datagram()
@@ -69,54 +38,70 @@ class ClientWindow(QMainWindow):
         dg.add_string(self.ui.pcsbTagTextBox.text())
         g_server_connection.send(dg)
         
-        self.ui.pcsbTagTextBox.setEnabled(False)
+        self.ui.pcsbTagTextBox.setReadOnly(True)
         
     def handle_lookup_tablet_response(self, dgi):
-        valid = dgi.getUint8()
+        valid = dgi.get_uint8()
         if valid:
             serialNo = dgi.get_string()
             deviceModel = dgi.get_string()
             studentName = dgi.get_string()
             grade = dgi.get_string()
+            email = dgi.get_string()
             
             self.ui.serialNoTextBox.setText(serialNo)
             self.ui.deviceModelTextBox.setText(deviceModel)
             self.ui.nameTextBox.setText(studentName)
             self.ui.gradeTextBox.setText(grade)
+            self.ui.emailTextBox.setText(email)
+            
+            self.ui.pcsbTagTextBox.setReadOnly(True)
+            self.ui.serialNoLabel.setEnabled(True)
+            self.ui.serialNoTextBox.setEnabled(True)
+            self.ui.deviceModelLabel.setEnabled(True)
+            self.ui.deviceModelTextBox.setEnabled(True)
+            
+            self.ui.studentInfoGroup.setEnabled(True)
+            self.ui.issueReportGroup.setEnabled(True)
         else:
             QMessageBox.critical(self, "Tablet Not Found", "That PCSB Tag (bar code) was not found in our database.")
             self.__reset()
         
     def __handle_press_submit(self):
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_SUBMIT_ISSUE)
+        dg.add_string(self.ui.pcsbTagTextBox.text())
+        dg.add_string(self.ui.descTextEntry.toPlainText())
+        dg.add_string(self.ui.dateEntry.text())
+        dg.add_string(self.ui.problemsTextEntry.toPlainText())
+        g_server_connection.send(dg)
+        
         QMessageBox.information(self, "Submitted",
             "Thank you for submitting your issue. The Net Assistants will get your tablet back to you as soon as possible.")
             
         self.__reset()
         
     def __reset(self):
-        self.ui.descTextEntry.setText("")
-        self.ui.descTextEntry.setEnabled(False)
-        
-        self.ui.problemsTextEntry.setText("")
-        self.ui.problemsTextEntry.setEnabled(False)
-        
-        self.ui.dateEntry.setEnabled(False)
-        
-        self.ui.nameTextBox.setText("")
-        self.ui.nameTextBox.setEnabled(False)
-        
-        self.ui.gradeTextBox.setText("")
-        self.ui.gradeTextBox.setEnabled(False)        
-        
-        self.ui.serialNoTextBox.setText("")
-        self.ui.serialNoTextBox.setEnabled(False)
-        
-        self.ui.deviceModelTextBox.setText("")
-        self.ui.deviceModelTextBox.setEnabled(False)
-        
+        self.ui.tabletInfoGroup.setEnabled(True)
         self.ui.pcsbTagTextBox.setText("")
         self.ui.pcsbTagTextBox.setEnabled(True)
+        self.ui.pcsbTagTextBox.setReadOnly(False)
         self.ui.pcsbTagTextBox.setFocus()
+        self.ui.serialNoTextBox.setEnabled(False)
+        self.ui.serialNoTextBox.setText("")
+        self.ui.serialNoLabel.setEnabled(False)
+        self.ui.deviceModelTextBox.setEnabled(False)
+        self.ui.deviceModelTextBox.setText("")
+        self.ui.deviceModelLabel.setEnabled(False)
+        
+        self.ui.studentInfoGroup.setEnabled(False)
+        self.ui.nameTextBox.setText("")
+        self.ui.gradeTextBox.setText("")     
+        self.ui.emailTextBox.setText("")
+        
+        self.ui.issueReportGroup.setEnabled(False)
+        self.ui.descTextEntry.setText("")
+        self.ui.problemsTextEntry.setText("")
         
     def __handle_submit_dialog_ack(self, r):
         print("Ack")

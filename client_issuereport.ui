@@ -7,21 +7,24 @@
     <x>0</x>
     <y>0</y>
     <width>908</width>
-    <height>644</height>
+    <height>718</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Tablet Inventory - Students</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_3">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <layout class="QGridLayout" name="gridLayout_5">
       <item row="0" column="1">
-       <widget class="QGroupBox" name="groupBox_2">
+       <widget class="QGroupBox" name="studentInfoGroup">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="font">
          <font>
-          <pointsize>12</pointsize>
+          <pointsize>14</pointsize>
          </font>
         </property>
         <property name="title">
@@ -31,7 +34,7 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
-            <widget class="QLabel" name="label_4">
+            <widget class="QLabel" name="nameLabel">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -44,19 +47,24 @@
            </item>
            <item>
             <widget class="QLineEdit" name="nameTextBox">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_5">
+            <widget class="QLabel" name="gradeLabel">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -69,14 +77,49 @@
            </item>
            <item>
             <widget class="QLineEdit" name="gradeTextBox">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="emailLabel">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>E-Mail Address</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="emailTextBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -86,10 +129,13 @@
        </widget>
       </item>
       <item row="0" column="0">
-       <widget class="QGroupBox" name="groupBox">
+       <widget class="QGroupBox" name="tabletInfoGroup">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="font">
          <font>
-          <pointsize>12</pointsize>
+          <pointsize>14</pointsize>
          </font>
         </property>
         <property name="title">
@@ -99,7 +145,10 @@
          <item row="0" column="0">
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
-            <widget class="QLabel" name="label">
+            <widget class="QLabel" name="pcsbTagLabel">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -118,16 +167,27 @@
            </item>
            <item>
             <widget class="QLineEdit" name="pcsbTagTextBox">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_2">
+            <widget class="QLabel" name="serialNoLabel">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -155,10 +215,21 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="label_3">
+            <widget class="QLabel" name="deviceModelLabel">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -186,6 +257,14 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
           </layout>
@@ -194,10 +273,13 @@
        </widget>
       </item>
       <item row="1" column="0" colspan="2">
-       <widget class="QGroupBox" name="groupBox_3">
+       <widget class="QGroupBox" name="issueReportGroup">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="font">
          <font>
-          <pointsize>12</pointsize>
+          <pointsize>14</pointsize>
          </font>
         </property>
         <property name="title">
@@ -206,8 +288,13 @@
         <layout class="QGridLayout" name="gridLayout_6">
          <item row="3" column="0">
           <widget class="QDateEdit" name="dateEntry">
-           <property name="enabled">
-            <bool>false</bool>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="calendarPopup">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -235,6 +322,15 @@
            </property>
           </widget>
          </item>
+         <item row="1" column="0">
+          <widget class="QTextEdit" name="descTextEntry">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+          </widget>
+         </item>
          <item row="0" column="0">
           <widget class="QLabel" name="label_6">
            <property name="font">
@@ -247,25 +343,17 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QTextEdit" name="descTextEntry">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
          <item row="6" column="0">
           <widget class="QTextEdit" name="problemsTextEntry">
-           <property name="enabled">
-            <bool>false</bool>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
            </property>
           </widget>
          </item>
          <item row="7" column="0" alignment="Qt::AlignRight">
           <widget class="QPushButton" name="submitBtn">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -292,6 +380,24 @@
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QPushButton" name="resetButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Reset</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

@@ -104,17 +104,20 @@ class Server:
             
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_LOOKUP_TABLET_RESP)
-            dg.add_uint8(0)
+            dg.add_uint8(1)
             dg.add_string("598253")
             dg.add_string("Dell Latitude 5295")
             dg.add_string("Brian Lach")
             dg.add_string("12")
+            dg.add_string("lachb@cat.pcsb.org")
             self.writer.send(dg, connection)
+            
         elif msg_type == MSG_CLIENT_SUBMIT_ISSUE:
             pcsb_tag = dgi.get_string()
             incident_desc = dgi.get_string()
             incident_date = dgi.get_string()
             problem_desc = dgi.get_string()
+            print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc))
         
     def __handle_datagram_netassistant(self, connection, client, dgi, msg_type):
         pass

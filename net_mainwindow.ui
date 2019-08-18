@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1041</width>
+    <height>682</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Tablet Inventory - Net Assistants</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Tablet Inventory</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QGroupBox" name="groupBox">
+          <property name="title">
+           <string>Search</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="title">
+              <string>Search By</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_3">
+              <item row="0" column="0">
+               <widget class="QRadioButton" name="radioButton">
+                <property name="text">
+                 <string>PCSB Tag</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QRadioButton" name="radioButton_2">
+                <property name="text">
+                 <string>Student/Faculty Name</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QRadioButton" name="radioButton_3">
+                <property name="text">
+                 <string>Device Model</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QRadioButton" name="radioButton_4">
+                <property name="text">
+                 <string>Serial Number</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="searchEntry">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="baseSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_2">
+          <property name="title">
+           <string>Tablets</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <widget class="QTableWidget" name="tabletView">
+             <property name="rowCount">
+              <number>0</number>
+             </property>
+             <property name="columnCount">
+              <number>5</number>
+             </property>
+             <column>
+              <property name="text">
+               <string>PCSB Tag</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Device Model</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Serial No.</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Active Issue</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Assignee</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Students/Faculty</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <widget class="QGroupBox" name="groupBox_5">
+          <property name="title">
+           <string>Search</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <item>
+            <widget class="QGroupBox" name="groupBox_6">
+             <property name="title">
+              <string>Search By</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_4">
+              <item row="0" column="0">
+               <widget class="QRadioButton" name="radioButton_5">
+                <property name="text">
+                 <string>Name</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QRadioButton" name="radioButton_6">
+                <property name="text">
+                 <string>Tablet PCSB Tag</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QRadioButton" name="radioButton_7">
+                <property name="text">
+                 <string>E-Mail Address</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QRadioButton" name="radioButton_8">
+                <property name="text">
+                 <string>Grade</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="facultySearchEntry">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="baseSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_4">
+          <property name="title">
+           <string>Students/Faculty</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <widget class="QTableWidget" name="tabletView_2">
+             <property name="rowCount">
+              <number>0</number>
+             </property>
+             <property name="columnCount">
+              <number>8</number>
+             </property>
+             <column>
+              <property name="text">
+               <string>Name</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>E-Mail Address</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Grade</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>In CAT</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Tablet PCSB Tag</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Internet Agreement</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>CAT Internet Agreement</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Insurance Paid</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
