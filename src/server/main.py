@@ -6,6 +6,83 @@ from pyad import *
 
 import sqlite3
 
+g_server_connection = None
+
+class Tablet:
+    
+    NAME_PREFIX = "C2031T"
+    
+    @classmethod
+    def get_ad_tablet_from_guid(guid_str):
+        container = adcontainer.ADContainer.from_cn("Computers")
+        tablet = container.from_guid(guid_str)
+        return tablet
+        
+    @classmethod
+    def get_pcsb_tag_from_name(name):
+        return name[len(Tablet.NAME_PREFIX):]
+    
+    @classmethod
+    def get_pcsb_tag_from_guid(guid_str):
+        tablet = Tablet.get_ad_tablet_from_guid(guid_str)
+        if tablet:
+            # The PCSB tag is after the C2031T
+            return Tablet.get_pcsb_tag_from_name(tablet.displayName)
+        return None
+    
+    @classmethod
+    def from_guid(guid_str):
+        # First get the tablet's active directory info
+        ad_tablet = Tablet.get_ad_tablet_from_guid(guid_str)
+        if not ad_tablet:
+            return None
+            
+        pcsb_tag = Tablet.get_pcsb_tag_from_name(ad_tablet.displayName)
+            
+        # Get tablet from database
+        c = g_server_connection.db_connection.cursor()
+        c.execute("SELECT * FROM Tablet WHERE GUID=?", (guid_str,))
+        tablet_info = c.fetchone()
+        if not tablet_info:
+            # In active directory but not inventory
+            return Tablet(guid_str, pcsb_tag)
+            
+        # Find the student with the tablet
+        student_guid = None
+        c.execute("SELECT * FROM StudentTabletLink WHERE TabletGUID=?", (guid_str,))
+        link = c.fetchone()
+        if link:
+            student_guid = link[0]
+        
+        return Tablet(guid_str, pcsb_tag, tablet_info[1], tablet_info[2], student_guid)
+        
+    @classmethod
+    def from_pcsb_tag(pcsb_tag):
+        pcsb_tag = pcsb_tag.strip('-')
+        guid = Tablet.NAME_PREFIX + pcsb_tag
+        return Tablet.from_guid(guid)
+        
+    def __init__(self, guid, pcsb_tag, serial = None, devicemodel = None, student_guid = None):
+        self.guid = guid
+        self.pcsb_tag = pcsb_tag
+        self.serial = serial
+        self.device_model = devicemodel
+        self.student_guid = student_guid
+        
+    def update(self):
+        c = g_server_connection.db_connection.cursor()
+        c.execute(
+            "UPDATE Tablet SET SerialNumber = ?, SET DeviceModel = ? WHERE GUID = ?",
+            (self.serial, self.device_model, self.guid)
+        )
+        
+    def update_link(self):
+        c = g_server_connection.db_connection.cursor()
+        if self.student_guid is None:
+            c.execute("DELETE FROM StudentTabletLink WHERE TabletGUID = ?", (self.guid))
+        else:
+            c.execute("UPDATE StudentTabletLink SET StudentGUID = ? WHERE TabletGUID = ?", (self.student_guid, self.guid))
+
 class Client:
     
     def __init__(self, conn, rendezvous):
@@ -35,28 +112,8 @@ class Server:
         password = "You can't handle the truth!"
         pyad.set_defaults(ldap_server = domain, username = user, password = password)
         
-        tablet_group = adcontainer.ADContainer.from_cn("Computers")
-        #print(testgroup)
-        #print(dir(testgroup))
-        #members = testgroup.get_children()
-        #print(members)
-        #for mem in members:
-        #    print(dir(mem))
-        #    print(mem.guid_str)
-        #print(dir(testgroup))
-        
         self.db_connection = sqlite3.connect('tablet_inventory.db')
-        c = self.db_connection.cursor()
         #c.execute("insert into Tablet values ('28F41AE8-AEF3-4F79-8E57-4CA88D270E1D', '234561', 'Dell Latitude 5285')")
-        c.execute("select * from Tablet")
-        tablet = c.fetchone()
-        tablet_guid = tablet[0]
-        ad_tablet = tablet_group.from_guid(tablet_guid)
-        print(ad_tablet)
-        print(dir(ad_tablet))
-        print(ad_tablet.displayName)
-        self.db_connection.commit()
-        self.db_connection.close()
         
         self.clients = {}
         
@@ -158,5 +215,6 @@ class Server:
         self.__check_disconnections()
         
 server = Server()
+g_server_connection = server
 while True:
     server.run()
