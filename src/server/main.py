@@ -2,7 +2,9 @@ from panda3d import core
 
 from src.shared.Consts import *
 
-#from pyad import *
+from pyad import *
+
+import sqlite3
 
 class Client:
     
@@ -31,13 +33,30 @@ class Server:
         domain = "cat.pcsb.org"
         user = "net.assistant"
         password = "You can't handle the truth!"
-        #pyad.set_defaults(ldap_server = domain, username = user, password = password)
+        pyad.set_defaults(ldap_server = domain, username = user, password = password)
         
-        #testgroup = adgroup.ADGroup.from_cn("AllCatStudents")
-        #members = testgroup.get_members()
-        #for mem in members:
-        #    print(mem)
+        tablet_group = adcontainer.ADContainer.from_cn("Computers")
+        #print(testgroup)
         #print(dir(testgroup))
+        #members = testgroup.get_children()
+        #print(members)
+        #for mem in members:
+        #    print(dir(mem))
+        #    print(mem.guid_str)
+        #print(dir(testgroup))
+        
+        self.db_connection = sqlite3.connect('tablet_inventory.db')
+        c = self.db_connection.cursor()
+        #c.execute("insert into Tablet values ('28F41AE8-AEF3-4F79-8E57-4CA88D270E1D', '234561', 'Dell Latitude 5285')")
+        c.execute("select * from Tablet")
+        tablet = c.fetchone()
+        tablet_guid = tablet[0]
+        ad_tablet = tablet_group.from_guid(tablet_guid)
+        print(ad_tablet)
+        print(dir(ad_tablet))
+        print(ad_tablet.displayName)
+        self.db_connection.commit()
+        self.db_connection.close()
         
         self.clients = {}
         
