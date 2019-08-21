@@ -44,13 +44,28 @@ class ClientWindow(QtWidgets.QMainWindow):
         g_server_connection.send(dg)
         
     def handle_get_all_tablets_resp(self, dgi):
-        num_tablets = dgi.get_uint16()
-        for i in range(num_tablets):
+        num_assigned_tablets = dgi.get_uint16()
+        for i in range(num_assigned_tablets):
             pcsb = dgi.get_string()
             device = dgi.get_string()
             serial = dgi.get_string()
-            issue = dgi.get_string()
+            issue = "No Issue"#dgi.get_string()
             name = dgi.get_string()
+            
+            self.ui.tabletView.insertRow(i)
+            self.ui.tabletView.setItem(i, 0, QtWidgets.QTableWidgetItem(pcsb))
+            self.ui.tabletView.setItem(i, 1, QtWidgets.QTableWidgetItem(device))
+            self.ui.tabletView.setItem(i, 2, QtWidgets.QTableWidgetItem(serial))
+            self.ui.tabletView.setItem(i, 3, QtWidgets.QTableWidgetItem(issue))
+            self.ui.tabletView.setItem(i, 4, QtWidgets.QTableWidgetItem(name))
+            
+        num_unassigned_tablets = dgi.get_uint16()
+        for i in range(num_unassigned_tablets):
+            pcsb = dgi.get_string()
+            device = dgi.get_string()
+            serial = dgi.get_string()
+            issue = "No Issue"
+            name = "Unassigned"
             
             self.ui.tabletView.insertRow(i)
             self.ui.tabletView.setItem(i, 0, QtWidgets.QTableWidgetItem(pcsb))

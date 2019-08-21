@@ -1,6 +1,7 @@
 from panda3d import core
 
 from src.shared.Consts import *
+from src.shared.base_tablet import BaseTablet
 
 from pyad import *
 
@@ -8,66 +9,129 @@ import sqlite3
 
 g_server_connection = None
 
-class Tablet:
+class Student:
+
+    @staticmethod
+    def get_ad_cat_student_list():
+        return pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org").get_children()
+    
+    @staticmethod
+    def from_active_directory_student(ad_student):
+        if not ad_student:
+            return None
+            
+        c = g_server_connection.db_connection.cursor()
+        c.execute("SELECT * FROM Student WHERE GUID = ?", (ad_student.guid_str,))
+        db_student = c.fetchone()
+        if not db_student:
+            # Student in active directory but not inventory system
+            return Student(ad_student)
+            
+        tablet_guid = None
+        
+        # Search for the tablet assigned to this student
+        c.execute("SELECT * FROM StudentTabletLink WHERE StudentGUID = ?", (ad_student.guid_str,))
+        link = c.fetchone()
+        if link:
+            tablet_guid = link[1]
+        
+        return Student(
+            ad_student, db_student[1], db_student[2],
+            db_student[3], db_student[4], tablet_guid
+        )
+        
+    @staticmethod
+    def from_guid(guid_str):
+        ad_student = pyad.from_guid(guid_str)
+        return Student.from_active_directory_student(ad_student)
+        
+    def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", tablet_guid = None):
+        self.ad_student = ad_student
+        self.name = ad_student.displayName
+        self.grade = ad_student.description
+        self.email = ad_student.userPrincipalName
+        self.guid = ad_student.guid_str
+        self.pcsb_agreement = pcsb_agreement
+        self.cat_agreement = cat_agreement
+        self.insurance_paid = insurance_paid
+        self.insurance_amount = insurance_amount
+        # They are a CAT student if in the +AllCATStudents container
+        self.cat_student = pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org") is not None
+        self.tablet_guid = tablet_guid
+    
+    def __str__(self):
+        return ("GUID: %s\n\tName: %s\n\tGrade: %s\n\tPCSB Agreement: %s\n"
+            "\tCAT Agreement: %s\n\tInsurance Paid: %s\n\tInsurance Amount: %s\n"
+            "\tCAT Student: %s\n\tTablet GUID: %s" % (self.guid, self.name, self.grade, self.pcsb_agreement,
+                self.cat_agreement, self.insurance_paid, self.insurance_amount, self.cat_student, self.tablet_guid))
+
+class Tablet(BaseTablet):
     
     NAME_PREFIX = "C2031T"
     
-    @classmethod
+    @staticmethod
+    def get_ad_tablet_list():
+        tablet_container = pyad.from_dn("ou=+AllTablets,dc=cat,dc=pcsb,dc=org")
+        all_tablets = tablet_container.get_children()
+        return all_tablets
+    
+    @staticmethod
     def get_ad_tablet_from_guid(guid_str):
-        container = adcontainer.ADContainer.from_cn("Computers")
-        tablet = container.from_guid(guid_str)
+        tablet = pyad.from_guid(guid_str)
         return tablet
         
-    @classmethod
+    @staticmethod
+    def get_ad_tablet_from_name(name_str):
+        tablet = pyad.from_cn(name_str)
+        return tablet
+        
+    @staticmethod
     def get_pcsb_tag_from_name(name):
         return name[len(Tablet.NAME_PREFIX):]
     
-    @classmethod
+    @staticmethod
     def get_pcsb_tag_from_guid(guid_str):
         tablet = Tablet.get_ad_tablet_from_guid(guid_str)
         if tablet:
             # The PCSB tag is after the C2031T
-            return Tablet.get_pcsb_tag_from_name(tablet.displayName)
+            return Tablet.get_pcsb_tag_from_name(tablet.cn)
         return None
     
-    @classmethod
+    @staticmethod
     def from_guid(guid_str):
         # First get the tablet's active directory info
-        ad_tablet = Tablet.get_ad_tablet_from_guid(guid_str)
+        ad_tablet = Tablet.get_ad_tablet_from_guid(guid_str)            
+        return Tablet.from_active_directory_tablet(ad_tablet)
+            
+    @staticmethod
+    def from_active_directory_tablet(ad_tablet):
         if not ad_tablet:
             return None
             
-        pcsb_tag = Tablet.get_pcsb_tag_from_name(ad_tablet.displayName)
+        pcsb_tag = Tablet.get_pcsb_tag_from_name(ad_tablet.cn)
             
         # Get tablet from database
         c = g_server_connection.db_connection.cursor()
-        c.execute("SELECT * FROM Tablet WHERE GUID=?", (guid_str,))
+        c.execute("SELECT * FROM Tablet WHERE GUID=?", (ad_tablet.guid_str,))
         tablet_info = c.fetchone()
         if not tablet_info:
             # In active directory but not inventory
-            return Tablet(guid_str, pcsb_tag)
+            return Tablet(ad_tablet, pcsb_tag)
             
         # Find the student with the tablet
         student_guid = None
-        c.execute("SELECT * FROM StudentTabletLink WHERE TabletGUID=?", (guid_str,))
+        c.execute("SELECT * FROM StudentTabletLink WHERE TabletGUID=?", (ad_tablet.guid_str,))
         link = c.fetchone()
         if link:
             student_guid = link[0]
         
-        return Tablet(guid_str, pcsb_tag, tablet_info[1], tablet_info[2], student_guid)
+        return Tablet(ad_tablet, pcsb_tag, tablet_info[1], tablet_info[2], student_guid)
         
-    @classmethod
+    @staticmethod
     def from_pcsb_tag(pcsb_tag):
         pcsb_tag = pcsb_tag.strip('-')
-        guid = Tablet.NAME_PREFIX + pcsb_tag
-        return Tablet.from_guid(guid)
-        
-    def __init__(self, guid, pcsb_tag, serial = None, devicemodel = None, student_guid = None):
-        self.guid = guid
-        self.pcsb_tag = pcsb_tag
-        self.serial = serial
-        self.device_model = devicemodel
-        self.student_guid = student_guid
+        name_str = Tablet.NAME_PREFIX + pcsb_tag
+        return Tablet.from_active_directory_tablet(Tablet.get_ad_tablet_from_name(name_str))
         
     def update(self):
         c = g_server_connection.db_connection.cursor()
@@ -102,6 +166,8 @@ class Server:
     TABLET_GROUP = "AllTablets"
     
     def __init__(self):
+        global g_server_connection
+        g_server_connection = self
         self.mgr = core.QueuedConnectionManager()
         self.listener = core.QueuedConnectionListener(self.mgr, 1)
         self.reader = core.QueuedConnectionReader(self.mgr, 1)
@@ -117,22 +183,45 @@ class Server:
         self.db_connection = sqlite3.connect('tablet_inventory.db')
         #c.execute("insert into Tablet values ('28F41AE8-AEF3-4F79-8E57-4CA88D270E1D', '234561', 'Dell Latitude 5285')")
         
-        self.__build_db_from_ad()
+        #self.__build_db_from_ad()
+        
+        #self.__test_read_tablet_db()
+        #self.__build_student_db_from_ad()
         
         self.clients = {}
         
-    def __build_db_from_ad(self):
+    def __test_read_tablet_db(self):
+        all_tablets = Tablet.get_ad_tablet_list()
+        for ad_tablet in all_tablets:
+            tablet = Tablet.from_active_directory_tablet(ad_tablet)
+            print(str(tablet))
+            
+    def __build_student_db_from_ad(self):
+        """Builds a database of students from entries in Active Directory."""
+        c = self.db_connection.cursor()
+        c.execute("DELETE FROM Student")
+        
+        all_students = Student.get_ad_cat_student_list()
+        for ad_student in all_students:
+            print (ad_student)
+            c.execute("INSERT INTO Student VALUES (?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00"))
+        self.db_connection.commit()
+        
+    def __build_tablet_db_from_ad(self):
         """Builds a database of tablets from tablet entries in Active Directory."""
-        tablet_container = adcontainer.ADContainer.from_dn("ou=+AllTablets,dc=cat,dc=pcsb,dc=org")
-        all_tablets = tablet_container.get_children()
+        
+        c = self.db_connection.cursor()
+        # Remove all current rows
+        c.execute("DELETE FROM Tablet")
+        
+        all_tablets = Tablet.get_ad_tablet_list()
         
         notspecified = 0
         
         for tablet in all_tablets:
-            c = self.db_connection.cursor()
-            c.execute("INSERT INTO Tablet VALUES (?,?,?)", (tablet.guid_str, "Not Specified %s" % notspecified, "Not Specified %s" % (notspecified + 1)))
+            c.execute("INSERT INTO Tablet VALUES (?,?,'Not Specified')", (tablet.guid_str, "Not Specified %s" % notspecified))
             print("Inserted tablet", tablet.guid_str)
-            notspecified += 2
+            notspecified += 1
         self.db_connection.commit()
         
     def __check_connections(self):
@@ -198,12 +287,26 @@ class Server:
             
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_LOOKUP_TABLET_RESP)
+            
+            tablet = Tablet.from_pcsb_tag(pcsb_tag)
+            if not tablet:
+                print("Can't find tablet with PCSB Tag %s" % pcsb_tag)
+                dg.add_uint8(0)
+                self.writer.send(dg, connection)
+                return
+                
+            if not tablet.student_guid:
+                print("No student assigned to tablet %s" % pcsb_tag)
+                dg.add_uint8(0)
+                self.writer.send(dg, connection)
+                return
+            student = Student.from_guid(tablet.student_guid)
+            
             dg.add_uint8(1)
-            dg.add_string("598253")
-            dg.add_string("Dell Latitude 5295")
-            dg.add_string("Brian Lach")
-            dg.add_string("12")
-            dg.add_string("lachb@cat.pcsb.org")
+            tablet.write_datagram(dg)
+            dg.add_string(student.name)
+            dg.add_string(student.grade)
+            dg.add_string(student.email)
             self.writer.send(dg, connection)
             
         elif msg_type == MSG_CLIENT_SUBMIT_ISSUE:
@@ -218,13 +321,32 @@ class Server:
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_GET_ALL_TABLETS_RESP)
             
-            dg.add_uint16(3) # tablet count
-            for i in range(3):
-                dg.add_string("044-0532")
-                dg.add_string("Dell Latitude 5295")
-                dg.add_string("623523")
-                dg.add_string("No")
-                dg.add_string("Brian Lach")
+            assigned_dg = core.Datagram()
+            unassigned_dg = core.Datagram()
+            num_assigned_tablets = 0
+            num_unassigned_tablets = 0
+            
+            all_tablets = Tablet.get_ad_tablet_list()
+            for ad_tablet in all_tablets:
+                tablet = Tablet.from_active_directory_tablet(ad_tablet)
+                if not tablet:
+                    continue
+                    
+                if tablet.student_guid:
+                    tablet.write_datagram(assigned_dg)
+                    student = Student.from_guid(tablet.student_guid)
+                    assigned_dg.add_string(student.name)
+                    num_assigned_tablets += 1
+                else:
+                    tablet.write_datagram(unassigned_dg)
+                    num_unassigned_tablets += 1
+                   
+            # Write the assigned tablets, then unassigned tablets
+            dg.add_uint16(num_assigned_tablets)
+            dg.append_data(assigned_dg.get_message())
+            dg.add_uint16(num_unassigned_tablets)
+            dg.append_data(unassigned_dg.get_message())
+            
             self.writer.send(dg, connection)
     
     def run(self):
@@ -233,6 +355,5 @@ class Server:
         self.__check_disconnections()
         
 server = Server()
-g_server_connection = server
 while True:
     server.run()
