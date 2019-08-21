@@ -98,6 +98,8 @@ class Client:
         self.client_type = ident
 
 class Server:
+
+    TABLET_GROUP = "AllTablets"
     
     def __init__(self):
         self.mgr = core.QueuedConnectionManager()
@@ -115,7 +117,23 @@ class Server:
         self.db_connection = sqlite3.connect('tablet_inventory.db')
         #c.execute("insert into Tablet values ('28F41AE8-AEF3-4F79-8E57-4CA88D270E1D', '234561', 'Dell Latitude 5285')")
         
+        self.__build_db_from_ad()
+        
         self.clients = {}
+        
+    def __build_db_from_ad(self):
+        """Builds a database of tablets from tablet entries in Active Directory."""
+        tablet_container = adcontainer.ADContainer.from_dn("ou=+AllTablets,dc=cat,dc=pcsb,dc=org")
+        all_tablets = tablet_container.get_children()
+        
+        notspecified = 0
+        
+        for tablet in all_tablets:
+            c = self.db_connection.cursor()
+            c.execute("INSERT INTO Tablet VALUES (?,?,?)", (tablet.guid_str, "Not Specified %s" % notspecified, "Not Specified %s" % (notspecified + 1)))
+            print("Inserted tablet", tablet.guid_str)
+            notspecified += 2
+        self.db_connection.commit()
         
     def __check_connections(self):
         if self.listener.new_connection_available():
