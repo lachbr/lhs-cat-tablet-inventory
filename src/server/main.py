@@ -58,6 +58,16 @@ class Student:
         # They are a CAT student if in the +AllCATStudents container
         self.cat_student = pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org") is not None
         self.tablet_guid = tablet_guid
+        
+    def write_datagram(self, dg):
+        dg.add_string(self.name)
+        dg.add_string(self.grade)
+        dg.add_string(self.email)
+        dg.add_uint8(self.pcsb_agreement)
+        dg.add_uint8(self.cat_agreement)
+        dg.add_uint8(self.insurance_paid)
+        dg.add_string(self.insurance_amount)
+        dg.add_uint8(self.cat_student)
     
     def __str__(self):
         return ("GUID: %s\n\tName: %s\n\tGrade: %s\n\tPCSB Agreement: %s\n"
@@ -318,6 +328,7 @@ class Server:
         
     def __handle_datagram_netassistant(self, connection, client, dgi, msg_type):
         if msg_type == MSG_CLIENT_GET_ALL_TABLETS:
+        
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_GET_ALL_TABLETS_RESP)
             
@@ -346,6 +357,38 @@ class Server:
             dg.append_data(assigned_dg.get_message())
             dg.add_uint16(num_unassigned_tablets)
             dg.append_data(unassigned_dg.get_message())
+            
+            self.writer.send(dg, connection)
+            
+        elif msg_type == MSG_CLIENT_GET_ALL_USERS:
+        
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_GET_ALL_USERS_RESP)
+            
+            student_dg = core.Datagram()
+            
+            all_students = Student.get_ad_cat_student_list()
+            
+            num_students = 0
+            
+            for ad_student in all_students:
+                student = Student.from_active_directory_student(ad_student)
+                if not student:
+                    continue
+                student.write_datagram(student_dg)
+                
+                has_tablet = False
+                if student.tablet_guid:
+                    tablet = Tablet.from_guid(student.tablet_guid)
+                    if tablet:
+                        has_tablet = True
+                        student_dg.add_string(tablet.pcsb_tag)
+                if not has_tablet:
+                    student_dg.add_string("No Tablet Assigned")
+                num_students += 1
+                
+            dg.add_uint16(num_students)
+            dg.append_data(student_dg.get_message())
             
             self.writer.send(dg, connection)
     
