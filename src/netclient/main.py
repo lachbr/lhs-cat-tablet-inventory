@@ -41,6 +41,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.blink_second = 0
         self.blink_state = 0
         
+        self.please_wait_dialog = None
+        
         self.__request_all_tablets()
         self.__request_all_users()
         
@@ -54,8 +56,35 @@ class ClientWindow(QtWidgets.QMainWindow):
         dg.add_uint16(MSG_CLIENT_GET_ALL_USERS)
         g_server_connection.send(dg)
         
+    def show_please_wait(self):
+        self.hide_please_wait()
+        
+        self.please_wait_dialog = QtWidgets.QMessageBox(self)
+        self.please_wait_dialog.setStandardButtons(QtWidgets.QMessageBox.NoButton)
+        self.please_wait_dialog.setText("Please wait...")
+        self.please_wait_dialog.setWindowTitle("Information")
+        self.please_wait_dialog.exec()
+        
+    def hide_please_wait(self):
+        if self.please_wait_dialog:
+            self.please_wait_dialog.close()
+        self.please_wait_dialog = None
+        
     def __handle_double_click_user_cell(self, row, column):
         print("Editing row", row)
+        userView = self.ui.tabletView_2
+        firstName = userView.item(row, 0).text()
+        lastName = userView.item(row, 1).text()
+        name = firstName + " " + lastName
+        
+        print("Requesting edit for", name)
+        
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_EDIT_USER)
+        dg.add_string(name) # We will search active directory by name
+        g_server_connection.send(dg)
+        
+        self.show_please_wait()
         
     def update_student_row(self, i, dgi):
         userView = self.ui.tabletView_2
