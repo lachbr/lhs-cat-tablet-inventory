@@ -61,7 +61,7 @@ class Student:
         
     def write_datagram(self, dg):
         dg.add_string(self.name)
-        dg.add_string(self.grade)
+        dg.add_string(str(self.grade))
         dg.add_string(self.email)
         dg.add_uint8(self.pcsb_agreement)
         dg.add_uint8(self.cat_agreement)
@@ -199,6 +199,9 @@ class Server:
         #self.__build_student_db_from_ad()
         
         self.clients = {}
+        
+        self.tabletsBeingEdited = []
+        self.studentsBeingEdited = []
         
     def __test_read_tablet_db(self):
         all_tablets = Tablet.get_ad_tablet_list()

@@ -17,6 +17,8 @@ class ServerConnection(BaseServerConnection):
     def handle_datagram(self, dgi, msg_type):
         if msg_type == MSG_SERVER_GET_ALL_TABLETS_RESP:
             g_main_window.handle_get_all_tablets_resp(dgi)
+        elif msg_type == MSG_SERVER_GET_ALL_USERS_RESP:
+            g_main_window.handle_get_all_users_resp(dgi)
         
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -33,17 +35,70 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.clock_timer.setSingleShot(False)
         self.clock_timer.start(0)
         
+        self.ui.userView = self.ui.tabletView_2
+        self.ui.userView.cellDoubleClicked.connect(self.__handle_double_click_user_cell)
+        
         self.blink_second = 0
         self.blink_state = 0
         
         self.__request_all_tablets()
+        self.__request_all_users()
         
     def __request_all_tablets(self):
         dg = core.Datagram()
         dg.add_uint16(MSG_CLIENT_GET_ALL_TABLETS)
         g_server_connection.send(dg)
         
+    def __request_all_users(self):
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_GET_ALL_USERS)
+        g_server_connection.send(dg)
+        
+    def __handle_double_click_user_cell(self, row, column):
+        print("Editing row", row)
+        
+    def update_student_row(self, i, dgi):
+        userView = self.ui.tabletView_2
+        
+        name = dgi.get_string()
+        firstLast = name.split(" ", 1)
+        firstName = firstLast[0]
+        lastName = firstLast[1]
+        grade = dgi.get_string()
+        email = dgi.get_string()
+        pcsb_agreement = dgi.get_uint8()
+        cat_agreement = dgi.get_uint8()
+        insurance_paid = dgi.get_uint8()
+        insurance_amount = dgi.get_string()
+        cat_student = dgi.get_uint8()
+        tablet_pcsb_tag = dgi.get_string()
+        
+        userView.setItem(i, 0, QtWidgets.QTableWidgetItem(firstName))
+        userView.setItem(i, 1, QtWidgets.QTableWidgetItem(lastName))
+        userView.setItem(i, 2, QtWidgets.QTableWidgetItem(email))
+        userView.setItem(i, 3, QtWidgets.QTableWidgetItem(grade))
+        userView.setItem(i, 4, QtWidgets.QTableWidgetItem(str(cat_student)))
+        userView.setItem(i, 5, QtWidgets.QTableWidgetItem(tablet_pcsb_tag))
+        userView.setItem(i, 6, QtWidgets.QTableWidgetItem(str(pcsb_agreement)))
+        userView.setItem(i, 7, QtWidgets.QTableWidgetItem(str(cat_agreement)))
+        userView.setItem(i, 8, QtWidgets.QTableWidgetItem(str(insurance_paid)))
+        userView.setItem(i, 9, QtWidgets.QTableWidgetItem(insurance_amount))
+        
+    def handle_get_all_users_resp(self, dgi):
+        userView = self.ui.tabletView_2
+        
+        # Clear existing rows
+        userView.setRowCount(0)
+        
+        num_users = dgi.get_uint16()
+        for i in range(num_users):
+            userView.insertRow(i)
+            self.update_student_row(i, dgi)
+        
     def handle_get_all_tablets_resp(self, dgi):
+        # Clear existing rows
+        self.ui.tabletView.setRowCount(0)
+        
         num_assigned_tablets = dgi.get_uint16()
         for i in range(num_assigned_tablets):
             pcsb = dgi.get_string()
