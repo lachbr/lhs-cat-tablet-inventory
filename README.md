@@ -11,6 +11,7 @@ This is the new tablet inventory system, used for keeping inventory of all table
   * panda3d
 * Qt Designer (for editing the UI)
 
+---
 
 There are 3 parts to it:
 * Server
