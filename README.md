@@ -2,6 +2,16 @@
 
 This is the new tablet inventory system, used for keeping inventory of all tablets, issues that occur with them, and the students/faculty who use tablets.
 
+## Dependencies
+* Python 3
+* via pip:
+  * pyqt5
+  * pywin32
+  * pyad
+  * panda3d
+* Qt Designer (for editing the UI)
+
+
 There are 3 parts to it:
 * Server
 * Client (Students/Faculty)
