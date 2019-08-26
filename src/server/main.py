@@ -60,6 +60,7 @@ class Student:
         self.tablet_guid = tablet_guid
         
     def write_datagram(self, dg):
+        dg.add_string(self.guid)
         dg.add_string(self.name)
         dg.add_string(str(self.grade))
         dg.add_string(self.email)
@@ -200,8 +201,8 @@ class Server:
         
         self.clients = {}
         
-        self.tabletsBeingEdited = []
-        self.studentsBeingEdited = []
+        self.tablets_being_edited = []
+        self.users_being_edited = []
         
     def __test_read_tablet_db(self):
         all_tablets = Tablet.get_ad_tablet_list()
@@ -394,6 +395,49 @@ class Server:
             dg.append_data(student_dg.get_message())
             
             self.writer.send(dg, connection)
+            
+        elif msg_type == MSG_CLIENT_EDIT_USER:
+            guid = dgi.get_string()
+            print("Received edit user request for guid:", guid)
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_EDIT_USER_RESP)
+            if not guid in self.users_being_edited:
+                print("not being edited")
+                dg.add_uint8(1)
+                dg.add_string(guid)
+                self.users_being_edited.append(guid)
+            else:
+                # User is already being edited by another client
+                print("Already being edited")
+                dg.add_uint8(0)
+            self.writer.send(dg, connection)
+            
+        elif msg_type == MSG_CLIENT_EDIT_TABLET:
+            guid = dgi.get_string()
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_EDIT_TABLET_RESP)
+            if not guid in self.tablets_being_edited:
+                dg.add_uint8(1)
+                dg.add_string(guid)
+                self.tablets_being_edited.append(guid)
+            else:
+                # Tablet is already being edited by another client
+                dg.add_uint8(0)
+            self.writer.send(dg, connection)
+            
+        elif msg_type == MSG_CLIENT_FINSIH_EDIT_TABLET:
+            guid = dgi.get_string()
+            if guid in self.tablets_being_edited:
+                self.tablets_being_edited.remove(guid)
+            else:
+                print("Suspicious: finished editing a tablet that wasn't being edited")
+                
+        elif msg_type == MSG_CLIENT_FINISH_EDIT_USER:
+            guid = dgi.get_string()
+            if guid in self.users_being_edited:
+                self.users_being_edited.remove(guid)
+            else:
+                print("Suspicious: finished editing a user that wasn't being edited")
     
     def run(self):
         self.__check_connections()

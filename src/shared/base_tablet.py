@@ -8,7 +8,14 @@ class BaseTablet:
         self.device_model = devicemodel
         self.student_guid = student_guid
         
+        if serial is None:
+            self.serial = "Not Specified"
+        if devicemodel is None:
+            self.device_model = "Not Specified"
+        
     def write_datagram(self, dg):
+        print(self.pcsb_tag, self.serial, self.device_model)
+        dg.add_string(self.guid)
         dg.add_string(self.pcsb_tag)
         dg.add_string(self.serial)
         dg.add_string(self.device_model)

@@ -43,6 +43,7 @@ class ClientWindow(QMainWindow):
     def handle_lookup_tablet_response(self, dgi):
         valid = dgi.get_uint8()
         if valid:
+            guid = dgi.get_string()
             pcsb_tag = dgi.get_string()
             serialNo = dgi.get_string()
             deviceModel = dgi.get_string()

@@ -19,6 +19,10 @@ class ServerConnection(BaseServerConnection):
             g_main_window.handle_get_all_tablets_resp(dgi)
         elif msg_type == MSG_SERVER_GET_ALL_USERS_RESP:
             g_main_window.handle_get_all_users_resp(dgi)
+        elif msg_type == MSG_SERVER_EDIT_USER_RESP:
+            g_main_window.handle_edit_user_resp(dgi)
+        elif msg_type == MSG_SERVER_EDIT_TABLET_RESP:
+            g_main_window.handle_edit_tablet_resp(dgi)
         
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -41,10 +45,24 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.blink_second = 0
         self.blink_state = 0
         
+        self.tablet_guid_rows = {}
+        self.user_guid_rows = {}
+        
         self.please_wait_dialog = None
+        self.edit_user_dialog = None
+        self.edit_tablet_dialog = None
         
         self.__request_all_tablets()
         self.__request_all_users()
+        
+    def open_edit_student_dialog(self, guid):
+        row = self.user_guid_rows[guid]
+        print("Opening student edit for row", row, "guid", guid)
+        from src.netclient import net_editstudent
+        dlg = QtWidgets.QDialog(self)
+        dlgconfig = net_editstudent.Ui_Dialog()
+        dlgconfig.setupUi(dlg)
+        dlg.exec()
         
     def __request_all_tablets(self):
         dg = core.Datagram()
@@ -67,21 +85,26 @@ class ClientWindow(QtWidgets.QMainWindow):
         
     def hide_please_wait(self):
         if self.please_wait_dialog:
-            self.please_wait_dialog.close()
+            self.please_wait_dialog.done(0)
         self.please_wait_dialog = None
         
-    def __handle_double_click_user_cell(self, row, column):
-        print("Editing row", row)
-        userView = self.ui.tabletView_2
-        firstName = userView.item(row, 0).text()
-        lastName = userView.item(row, 1).text()
-        name = firstName + " " + lastName
+    def handle_edit_user_resp(self, dgi):
+        self.hide_please_wait()
+        flag = dgi.get_uint8()
+        if not flag:
+            QtWidgets.QMessageBox.information(self, "Error", "This user is currently being edited by someone else.")
+        else:
+            print("Edit it!")
+            guid = dgi.get_string()
+            self.open_edit_student_dialog(guid)
         
-        print("Requesting edit for", name)
+    def __handle_double_click_user_cell(self, row, column):
+        guid = self.user_guid_rows[row]
+        print("Requesting edit for", guid)
         
         dg = core.Datagram()
         dg.add_uint16(MSG_CLIENT_EDIT_USER)
-        dg.add_string(name) # We will search active directory by name
+        dg.add_string(guid) # We will search active directory by guid
         g_server_connection.send(dg)
         
         self.show_please_wait()
@@ -89,6 +112,7 @@ class ClientWindow(QtWidgets.QMainWindow):
     def update_student_row(self, i, dgi):
         userView = self.ui.tabletView_2
         
+        guid = dgi.get_string()
         name = dgi.get_string()
         firstLast = name.split(" ", 1)
         firstName = firstLast[0]
@@ -101,6 +125,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         insurance_amount = dgi.get_string()
         cat_student = dgi.get_uint8()
         tablet_pcsb_tag = dgi.get_string()
+        
+        self.user_guid_rows[i] = guid
         
         userView.setItem(i, 0, QtWidgets.QTableWidgetItem(firstName))
         userView.setItem(i, 1, QtWidgets.QTableWidgetItem(lastName))
@@ -118,6 +144,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         
         # Clear existing rows
         userView.setRowCount(0)
+        self.user_guid_rows = {}
         
         num_users = dgi.get_uint16()
         for i in range(num_users):
@@ -127,9 +154,11 @@ class ClientWindow(QtWidgets.QMainWindow):
     def handle_get_all_tablets_resp(self, dgi):
         # Clear existing rows
         self.ui.tabletView.setRowCount(0)
+        self.tablet_guid_rows = {}
         
         num_assigned_tablets = dgi.get_uint16()
         for i in range(num_assigned_tablets):
+            guid = dgi.get_string()
             pcsb = dgi.get_string()
             device = dgi.get_string()
             serial = dgi.get_string()
@@ -137,6 +166,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             name = dgi.get_string()
             
             self.ui.tabletView.insertRow(i)
+            self.tablet_guid_rows[i] = guid
             self.ui.tabletView.setItem(i, 0, QtWidgets.QTableWidgetItem(pcsb))
             self.ui.tabletView.setItem(i, 1, QtWidgets.QTableWidgetItem(device))
             self.ui.tabletView.setItem(i, 2, QtWidgets.QTableWidgetItem(serial))
@@ -145,6 +175,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             
         num_unassigned_tablets = dgi.get_uint16()
         for i in range(num_unassigned_tablets):
+            guid = dgi.get_string()
             pcsb = dgi.get_string()
             device = dgi.get_string()
             serial = dgi.get_string()
@@ -152,6 +183,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             name = "Unassigned"
             
             self.ui.tabletView.insertRow(i)
+            self.tablet_guid_rows[i] = guid
             self.ui.tabletView.setItem(i, 0, QtWidgets.QTableWidgetItem(pcsb))
             self.ui.tabletView.setItem(i, 1, QtWidgets.QTableWidgetItem(device))
             self.ui.tabletView.setItem(i, 2, QtWidgets.QTableWidgetItem(serial))
