@@ -41,9 +41,9 @@ class Ui_Dialog(object):
         self.label_2 = QtWidgets.QLabel(Dialog)
         self.label_2.setObjectName("label_2")
         self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_2)
-        self.tabletCombo = QtWidgets.QComboBox(Dialog)
-        self.tabletCombo.setObjectName("tabletCombo")
-        self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.tabletCombo)
+        self.tabletPCSBEdit = QtWidgets.QLineEdit(Dialog)
+        self.tabletPCSBEdit.setObjectName("tabletPCSBEdit")
+        self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.tabletPCSBEdit)
         self.gridLayout.addLayout(self.formLayout, 0, 0, 1, 1)
 
         self.retranslateUi(Dialog)
@@ -60,3 +60,4 @@ class Ui_Dialog(object):
         self.label.setText(_translate("Dialog", "Insurance Amount"))
         self.insuranceAmountEdit.setPlaceholderText(_translate("Dialog", "Example: $75"))
         self.label_2.setText(_translate("Dialog", "Assigned Tablet"))
+        self.tabletPCSBEdit.setPlaceholderText(_translate("Dialog", "Scan PCSB Tag (Bar Code) here"))

@@ -58,6 +58,7 @@ class Student:
         # They are a CAT student if in the +AllCATStudents container
         self.cat_student = pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org") is not None
         self.tablet_guid = tablet_guid
+        self.orig_tablet_guid = tablet_guid
         
     def write_datagram(self, dg):
         dg.add_string(self.guid)
@@ -69,6 +70,24 @@ class Student:
         dg.add_uint8(self.insurance_paid)
         dg.add_string(self.insurance_amount)
         dg.add_uint8(self.cat_student)
+        
+    def update(self):
+        c = g_server_connection.db_connection.cursor()
+        c.execute("UPDATE Student SET InternetAgreementPCSB = ?, InternetAgreementCAT = ?, InsurancePaid = ?, InsuranceAmount = ? WHERE GUID = ?",
+                 (int(self.pcsb_agreement), int(self.cat_agreement), int(self.insurance_paid), self.insurance_amount, self.guid))
+        g_server_connection.db_connection.commit()
+                 
+    def update_link(self):
+        c = g_server_connection.db_connection.cursor()
+        if not self.orig_tablet_guid and self.tablet_guid:
+            c.execute("INSERT INTO StudentTabletLink VALUES (?, ?)", (self.guid, self.tablet_guid))
+        elif self.tablet_guid and self.orig_tablet_guid:
+            c.execute("UPDATE StudentTabletLink SET TabletGUID = ? WHERE StudentGUID = ?", (self.tablet_guid, self.guid))
+        elif not self.tablet_guid and self.orig_tablet_guid:
+            c.execute("DELETE FROM StudentTabletLink WHERE StudentGUID = ?", (self.guid,))
+        g_server_connection.db_connection.commit()
+            
+        self.orig_tablet_guid = self.tablet_guid
     
     def __str__(self):
         return ("GUID: %s\n\tName: %s\n\tGrade: %s\n\tPCSB Agreement: %s\n"
@@ -140,8 +159,9 @@ class Tablet(BaseTablet):
         
     @staticmethod
     def from_pcsb_tag(pcsb_tag):
-        pcsb_tag = pcsb_tag.strip('-')
+        pcsb_tag = pcsb_tag.replace('-', '')
         name_str = Tablet.NAME_PREFIX + pcsb_tag
+        print(name_str)
         return Tablet.from_active_directory_tablet(Tablet.get_ad_tablet_from_name(name_str))
         
     def update(self):
@@ -203,6 +223,43 @@ class Server:
         
         self.tablets_being_edited = []
         self.users_being_edited = []
+        
+        self.__sync_tablet_db()
+        
+    def __sync_tablet_db(self):
+        """Makes sure our local database contains all of the Active Directory tablets."""
+        print("Syncing local database with Active Directory...")
+        
+        c = self.db_connection.cursor()
+        
+        notspecified = 0
+        
+        all_tablets = Tablet.get_ad_tablet_list()
+        
+        for ad_tablet in all_tablets:
+            # Check for an entry in our local database
+            c.execute("SELECT * FROM Tablet WHERE GUID = ?", (ad_tablet.guid_str,))
+            tablet = c.fetchone()
+            if not tablet:
+                # Doesn't exist, make a default entry.
+                c.execute("INSERT INTO Tablet VALUES (?,'Not Specified','Not Specified')", (ad_tablet.guid_str,))
+                print("Inserted new tablet")
+                notspecified += 1
+                
+        # Now search for tablets in our local database that no longer exist in Active Directory.
+        c.execute("SELECT * FROM Tablet")
+        db_tablets = c.fetchall()
+        for db_tablet in db_tablets:
+            guid = db_tablet[0]
+            tablet = Tablet.from_guid(guid)
+            if not tablet:
+                # Dead tablet
+                c.execute("DELETE FROM Tablet WHERE GUID = ?", (guid,))
+                print("Removed deleted tablet")
+                
+        self.db_connection.commit()
+        
+        print("Done")
         
     def __test_read_tablet_db(self):
         all_tablets = Tablet.get_ad_tablet_list()
@@ -329,6 +386,48 @@ class Server:
             incident_date = dgi.get_string()
             problem_desc = dgi.get_string()
             print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc))
+            
+    def get_all_client_connections(self, client_type):
+        clients = []
+        for client in self.clients.values():
+            if client.client_type == client_type:
+                clients.append(client.connection)
+        return clients
+            
+    def __send_all_users(self, connections):
+        dg = core.Datagram()
+        dg.add_uint16(MSG_SERVER_GET_ALL_USERS_RESP)
+        
+        student_dg = core.Datagram()
+        
+        all_students = Student.get_ad_cat_student_list()
+        
+        num_students = 0
+        
+        for ad_student in all_students:
+            student = Student.from_active_directory_student(ad_student)
+            if not student:
+                continue
+            student.write_datagram(student_dg)
+            
+            has_tablet = False
+            if student.tablet_guid:
+                tablet = Tablet.from_guid(student.tablet_guid)
+                if tablet:
+                    has_tablet = True
+                    student_dg.add_string(tablet.pcsb_tag)
+            if not has_tablet:
+                student_dg.add_string("No Tablet Assigned")
+            num_students += 1
+            
+        dg.add_uint16(num_students)
+        dg.append_data(student_dg.get_message())
+        
+        if isinstance(connections, list):
+            for conn in connections:
+                self.writer.send(dg, conn)
+        else:
+            self.writer.send(dg, connections)
         
     def __handle_datagram_netassistant(self, connection, client, dgi, msg_type):
         if msg_type == MSG_CLIENT_GET_ALL_TABLETS:
@@ -365,36 +464,7 @@ class Server:
             self.writer.send(dg, connection)
             
         elif msg_type == MSG_CLIENT_GET_ALL_USERS:
-        
-            dg = core.Datagram()
-            dg.add_uint16(MSG_SERVER_GET_ALL_USERS_RESP)
-            
-            student_dg = core.Datagram()
-            
-            all_students = Student.get_ad_cat_student_list()
-            
-            num_students = 0
-            
-            for ad_student in all_students:
-                student = Student.from_active_directory_student(ad_student)
-                if not student:
-                    continue
-                student.write_datagram(student_dg)
-                
-                has_tablet = False
-                if student.tablet_guid:
-                    tablet = Tablet.from_guid(student.tablet_guid)
-                    if tablet:
-                        has_tablet = True
-                        student_dg.add_string(tablet.pcsb_tag)
-                if not has_tablet:
-                    student_dg.add_string("No Tablet Assigned")
-                num_students += 1
-                
-            dg.add_uint16(num_students)
-            dg.append_data(student_dg.get_message())
-            
-            self.writer.send(dg, connection)
+            self.__send_all_users(connection)
             
         elif msg_type == MSG_CLIENT_EDIT_USER:
             guid = dgi.get_string()
@@ -425,9 +495,10 @@ class Server:
                 dg.add_uint8(0)
             self.writer.send(dg, connection)
             
-        elif msg_type == MSG_CLIENT_FINSIH_EDIT_TABLET:
+        elif msg_type == MSG_CLIENT_FINISH_EDIT_TABLET:
             guid = dgi.get_string()
             if guid in self.tablets_being_edited:
+                print("Done editing tablet", guid)
                 self.tablets_being_edited.remove(guid)
             else:
                 print("Suspicious: finished editing a tablet that wasn't being edited")
@@ -435,7 +506,31 @@ class Server:
         elif msg_type == MSG_CLIENT_FINISH_EDIT_USER:
             guid = dgi.get_string()
             if guid in self.users_being_edited:
+                print("Done editing user", guid)
                 self.users_being_edited.remove(guid)
+                
+                ret = dgi.get_uint8()
+                if ret:
+                    pcsb_agreement = dgi.get_uint8()
+                    cat_agreement = dgi.get_uint8()
+                    insurance = dgi.get_uint8()
+                    insurance_amt = dgi.get_string()
+                    tablet_pcsb = dgi.get_string()
+                    print(tablet_pcsb)
+                    
+                    student = Student.from_guid(guid)
+                    student.pcsb_agreement = pcsb_agreement
+                    student.cat_agreement = cat_agreement
+                    student.insurance_paid = insurance
+                    student.insurance_amount = insurance_amt
+                    if len(tablet_pcsb) > 0:
+                        student.tablet_guid = Tablet.from_pcsb_tag(tablet_pcsb).guid
+                    else:
+                        student.tablet_guid = None
+                    student.update()
+                    student.update_link()
+                    
+                    self.__send_all_users(self.get_all_client_connections(CLIENT_NET_ASSISTANT))
             else:
                 print("Suspicious: finished editing a user that wasn't being edited")
     

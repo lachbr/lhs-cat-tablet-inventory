@@ -46,7 +46,10 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.blink_state = 0
         
         self.tablet_guid_rows = {}
+        self.tablet_edit_req_row = 0
         self.user_guid_rows = {}
+        self.user_edit_req_row = 0
+        self.user_editing_guid = None
         
         self.please_wait_dialog = None
         self.edit_user_dialog = None
@@ -55,14 +58,50 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.__request_all_tablets()
         self.__request_all_users()
         
-    def open_edit_student_dialog(self, guid):
-        row = self.user_guid_rows[guid]
-        print("Opening student edit for row", row, "guid", guid)
+    def __set_checkbox_state(self, cbox, string):
+        flag = bool(int(string))
+        if flag:
+            cbox.setCheckState(QtCore.Qt.Checked)
+        else:
+            cbox.setCheckState(QtCore.Qt.Unchecked)
+        
+    def open_edit_student_dialog(self, row):
+        user_view = self.ui.tabletView_2
+        print("Opening student edit for row", row)
         from src.netclient import net_editstudent
         dlg = QtWidgets.QDialog(self)
         dlgconfig = net_editstudent.Ui_Dialog()
         dlgconfig.setupUi(dlg)
-        dlg.exec()
+        self.__set_checkbox_state(dlgconfig.pcsbAgreementCheckBox, user_view.item(row, 6).text())
+        self.__set_checkbox_state(dlgconfig.catAgreementCheckBox, user_view.item(row, 7).text())
+        self.__set_checkbox_state(dlgconfig.insuranceCheckBox, user_view.item(row, 8).text())
+        dlgconfig.insuranceAmountEdit.setText(user_view.item(row, 9).text())
+        
+        tablet_data = user_view.item(row, 5).text()
+        if tablet_data != "No Tablet Assigned": # yuck
+            dlgconfig.tabletPCSBEdit.setText(user_view.item(row, 5).text())
+            
+        dlg.open()
+        dlg.finished.connect(self.__handle_edit_student_finish)
+        self.edit_user_dialog = (dlg, dlgconfig)
+        
+    def __handle_edit_student_finish(self, ret):
+        print("Done editing")
+        
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_FINISH_EDIT_USER)
+        dg.add_string(self.user_editing_guid)
+        dg.add_uint8(ret)
+        if ret:
+            dlgcfg = self.edit_user_dialog[1]
+            dg.add_uint8(dlgcfg.pcsbAgreementCheckBox.checkState() != 0)
+            dg.add_uint8(dlgcfg.catAgreementCheckBox.checkState() != 0)
+            dg.add_uint8(dlgcfg.insuranceCheckBox.checkState() != 0)
+            dg.add_string(dlgcfg.insuranceAmountEdit.text())
+            dg.add_string(dlgcfg.tabletPCSBEdit.text())
+        g_server_connection.send(dg)
+        
+        self.edit_user_dialog = None
         
     def __request_all_tablets(self):
         dg = core.Datagram()
@@ -81,7 +120,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.please_wait_dialog.setStandardButtons(QtWidgets.QMessageBox.NoButton)
         self.please_wait_dialog.setText("Please wait...")
         self.please_wait_dialog.setWindowTitle("Information")
-        self.please_wait_dialog.exec()
+        self.please_wait_dialog.open()
         
     def hide_please_wait(self):
         if self.please_wait_dialog:
@@ -96,9 +135,11 @@ class ClientWindow(QtWidgets.QMainWindow):
         else:
             print("Edit it!")
             guid = dgi.get_string()
-            self.open_edit_student_dialog(guid)
+            self.user_editing_guid = guid
+            self.open_edit_student_dialog(self.user_edit_req_row)
         
     def __handle_double_click_user_cell(self, row, column):
+        self.user_edit_req_row = row
         guid = self.user_guid_rows[row]
         print("Requesting edit for", guid)
         
