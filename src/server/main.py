@@ -170,13 +170,15 @@ class Tablet(BaseTablet):
             "UPDATE Tablet SET SerialNumber = ?, SET DeviceModel = ? WHERE GUID = ?",
             (self.serial, self.device_model, self.guid)
         )
+        g_server_connection.db_connection.commit()
         
     def update_link(self):
         c = g_server_connection.db_connection.cursor()
         if self.student_guid is None:
-            c.execute("DELETE FROM StudentTabletLink WHERE TabletGUID = ?", (self.guid))
+            c.execute("DELETE FROM StudentTabletLink WHERE TabletGUID = ?", (self.guid,))
         else:
             c.execute("UPDATE StudentTabletLink SET StudentGUID = ? WHERE TabletGUID = ?", (self.student_guid, self.guid))
+        g_server_connection.db_connection.commit()
 
 class Client:
     
@@ -208,7 +210,7 @@ class Server:
         
         domain = "cat.pcsb.org"
         user = "net.assistant"
-        password = "You can't handle the truth!"
+        password = "The Force is Strong"
         pyad.set_defaults(ldap_server = domain, username = user, password = password)
         
         self.db_connection = sqlite3.connect('tablet_inventory.db')
@@ -516,7 +518,6 @@ class Server:
                     insurance = dgi.get_uint8()
                     insurance_amt = dgi.get_string()
                     tablet_pcsb = dgi.get_string()
-                    print(tablet_pcsb)
                     
                     student = Student.from_guid(guid)
                     student.pcsb_agreement = pcsb_agreement
@@ -528,7 +529,18 @@ class Server:
                     else:
                         student.tablet_guid = None
                     student.update()
-                    student.update_link()
+                    
+                    dg = core.Datagram()
+                    dg.add_uint16(MSG_SERVER_FINISH_EDIT_USER_RESP)
+                    
+                    try:
+                        student.update_link()
+                        dg.add_uint8(1)
+                    except Exception as e:
+                        dg.add_uint8(0)
+                        dg.add_string("There was an error assigning the tablet:\n\n" + str(e))
+                        
+                    self.writer.send(dg, connection)
                     
                     self.__send_all_users(self.get_all_client_connections(CLIENT_NET_ASSISTANT))
             else:

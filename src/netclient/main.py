@@ -6,8 +6,16 @@ from panda3d import core
 import sys
 from datetime import datetime
 
+from PyQt5 import QtWidgets, QtCore, QtGui
+
 g_server_connection = None
 g_main_window = None
+
+class ADTableWidgetItem(QtWidgets.QTableWidgetItem):
+
+    def __init__(self, guid, text):
+        QtWidgets.QTableWidgetItem.__init__(self, text)
+        self.guid = guid
 
 class ServerConnection(BaseServerConnection):
     
@@ -23,8 +31,8 @@ class ServerConnection(BaseServerConnection):
             g_main_window.handle_edit_user_resp(dgi)
         elif msg_type == MSG_SERVER_EDIT_TABLET_RESP:
             g_main_window.handle_edit_tablet_resp(dgi)
-        
-from PyQt5 import QtWidgets, QtCore, QtGui
+        elif msg_type == MSG_SERVER_FINISH_EDIT_USER_RESP:
+            g_main_window.handle_finish_edit_user_resp(dgi)
 
 class ClientWindow(QtWidgets.QMainWindow):
     
@@ -40,15 +48,14 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.clock_timer.start(0)
         
         self.ui.userView = self.ui.tabletView_2
-        self.ui.userView.cellDoubleClicked.connect(self.__handle_double_click_user_cell)
+        self.ui.userView.itemDoubleClicked.connect(self.__handle_double_click_user_item)
         
         self.blink_second = 0
         self.blink_state = 0
         
         self.tablet_guid_rows = {}
         self.tablet_edit_req_row = 0
-        self.user_guid_rows = {}
-        self.user_edit_req_row = 0
+        self.user_edit_req_item = None
         self.user_editing_guid = None
         
         self.please_wait_dialog = None
@@ -85,6 +92,13 @@ class ClientWindow(QtWidgets.QMainWindow):
         dlg.finished.connect(self.__handle_edit_student_finish)
         self.edit_user_dialog = (dlg, dlgconfig)
         
+    def handle_finish_edit_user_resp(self, dgi):
+        self.hide_please_wait()
+        ret = dgi.get_uint8()
+        if not ret:
+            error_msg = dgi.get_string()
+            QtWidgets.QMessageBox.information(self, "Message From Server", error_msg)
+        
     def __handle_edit_student_finish(self, ret):
         print("Done editing")
         
@@ -99,6 +113,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             dg.add_uint8(dlgcfg.insuranceCheckBox.checkState() != 0)
             dg.add_string(dlgcfg.insuranceAmountEdit.text())
             dg.add_string(dlgcfg.tabletPCSBEdit.text())
+            self.show_please_wait()
         g_server_connection.send(dg)
         
         self.edit_user_dialog = None
@@ -136,11 +151,11 @@ class ClientWindow(QtWidgets.QMainWindow):
             print("Edit it!")
             guid = dgi.get_string()
             self.user_editing_guid = guid
-            self.open_edit_student_dialog(self.user_edit_req_row)
+            self.open_edit_student_dialog(self.ui.tabletView_2.row(self.user_edit_req_item))
         
-    def __handle_double_click_user_cell(self, row, column):
-        self.user_edit_req_row = row
-        guid = self.user_guid_rows[row]
+    def __handle_double_click_user_item(self, item):
+        self.user_edit_req_item = item
+        guid = item.guid
         print("Requesting edit for", guid)
         
         dg = core.Datagram()
@@ -167,34 +182,37 @@ class ClientWindow(QtWidgets.QMainWindow):
         cat_student = dgi.get_uint8()
         tablet_pcsb_tag = dgi.get_string()
         
-        self.user_guid_rows[i] = guid
-        
-        userView.setItem(i, 0, QtWidgets.QTableWidgetItem(firstName))
-        userView.setItem(i, 1, QtWidgets.QTableWidgetItem(lastName))
-        userView.setItem(i, 2, QtWidgets.QTableWidgetItem(email))
-        userView.setItem(i, 3, QtWidgets.QTableWidgetItem(grade))
-        userView.setItem(i, 4, QtWidgets.QTableWidgetItem(str(cat_student)))
-        userView.setItem(i, 5, QtWidgets.QTableWidgetItem(tablet_pcsb_tag))
-        userView.setItem(i, 6, QtWidgets.QTableWidgetItem(str(pcsb_agreement)))
-        userView.setItem(i, 7, QtWidgets.QTableWidgetItem(str(cat_agreement)))
-        userView.setItem(i, 8, QtWidgets.QTableWidgetItem(str(insurance_paid)))
-        userView.setItem(i, 9, QtWidgets.QTableWidgetItem(insurance_amount))
+        userView.setItem(i, 0, ADTableWidgetItem(guid, firstName))
+        userView.setItem(i, 1, ADTableWidgetItem(guid, lastName))
+        userView.setItem(i, 2, ADTableWidgetItem(guid, email))
+        userView.setItem(i, 3, ADTableWidgetItem(guid, grade))
+        userView.setItem(i, 4, ADTableWidgetItem(guid, str(cat_student)))
+        userView.setItem(i, 5, ADTableWidgetItem(guid, tablet_pcsb_tag))
+        userView.setItem(i, 6, ADTableWidgetItem(guid, str(pcsb_agreement)))
+        userView.setItem(i, 7, ADTableWidgetItem(guid, str(cat_agreement)))
+        userView.setItem(i, 8, ADTableWidgetItem(guid, str(insurance_paid)))
+        userView.setItem(i, 9, ADTableWidgetItem(guid, insurance_amount))
         
     def handle_get_all_users_resp(self, dgi):
         userView = self.ui.tabletView_2
         
         # Clear existing rows
+        userView.clearContents()
         userView.setRowCount(0)
-        self.user_guid_rows = {}
+        userView.setSortingEnabled(False)
         
         num_users = dgi.get_uint16()
         for i in range(num_users):
             userView.insertRow(i)
             self.update_student_row(i, dgi)
+            
+        userView.setSortingEnabled(True)
         
     def handle_get_all_tablets_resp(self, dgi):
         # Clear existing rows
+        self.ui.tabletView.clearContents()
         self.ui.tabletView.setRowCount(0)
+        self.ui.tabletView.setSortingEnabled(False)
         self.tablet_guid_rows = {}
         
         num_assigned_tablets = dgi.get_uint16()
@@ -208,11 +226,11 @@ class ClientWindow(QtWidgets.QMainWindow):
             
             self.ui.tabletView.insertRow(i)
             self.tablet_guid_rows[i] = guid
-            self.ui.tabletView.setItem(i, 0, QtWidgets.QTableWidgetItem(pcsb))
-            self.ui.tabletView.setItem(i, 1, QtWidgets.QTableWidgetItem(device))
-            self.ui.tabletView.setItem(i, 2, QtWidgets.QTableWidgetItem(serial))
-            self.ui.tabletView.setItem(i, 3, QtWidgets.QTableWidgetItem(issue))
-            self.ui.tabletView.setItem(i, 4, QtWidgets.QTableWidgetItem(name))
+            self.ui.tabletView.setItem(i, 0, ADTableWidgetItem(guid, pcsb))
+            self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
+            self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
+            self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
+            self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
             
         num_unassigned_tablets = dgi.get_uint16()
         for i in range(num_unassigned_tablets):
@@ -225,11 +243,13 @@ class ClientWindow(QtWidgets.QMainWindow):
             
             self.ui.tabletView.insertRow(i)
             self.tablet_guid_rows[i] = guid
-            self.ui.tabletView.setItem(i, 0, QtWidgets.QTableWidgetItem(pcsb))
-            self.ui.tabletView.setItem(i, 1, QtWidgets.QTableWidgetItem(device))
-            self.ui.tabletView.setItem(i, 2, QtWidgets.QTableWidgetItem(serial))
-            self.ui.tabletView.setItem(i, 3, QtWidgets.QTableWidgetItem(issue))
-            self.ui.tabletView.setItem(i, 4, QtWidgets.QTableWidgetItem(name))
+            self.ui.tabletView.setItem(i, 0, ADTableWidgetItem(guid, pcsb))
+            self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
+            self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
+            self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
+            self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
+            
+        self.ui.tabletView.setSortingEnabled(True)
         
     def __get_block(self, now):
         now_time = now.time()
