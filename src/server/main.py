@@ -13,7 +13,9 @@ class Student:
 
     @staticmethod
     def get_ad_cat_student_list():
-        return pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org").get_children()
+        cat_students = pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org").get_children()
+        net_assistants = pyad.from_dn("ou=+NetworkAssistants,dc=cat,dc=pcsb,dc=org").get_children()
+        return cat_students + net_assistants
     
     @staticmethod
     def from_active_directory_student(ad_student):
@@ -42,7 +44,10 @@ class Student:
         
     @staticmethod
     def from_guid(guid_str):
-        ad_student = pyad.from_guid(guid_str)
+        try:
+            ad_student = pyad.from_guid(guid_str)
+        except:
+            ad_student = None
         return Student.from_active_directory_student(ad_student)
         
     def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", tablet_guid = None):
@@ -233,10 +238,42 @@ class Server:
         self.users_being_edited = []
         
         self.__sync_tablet_db()
+        self.__sync_user_db()
+        
+        print("Server is now running.")
+        
+    def __sync_user_db(self):
+        """Makes sure our local database contains all of the Active Directory users."""
+        print("Syncing local user database with Active Directory...")
+        c = self.db_connection.cursor()
+        all_students = Student.get_ad_cat_student_list()
+        for ad_student in all_students:
+            # Check for an entry
+            c.execute("SELECT * FROM Student WHERE GUID = ?", (ad_student.guid_str,))
+            student = c.fetchone()
+            if not student:
+                # Doesn't exist, make a default entry.
+                c.execute("INSERT INTO Student VALUES (?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00"))
+                print("Added new student", ad_student.cn)
+                
+        # Now search for students in our local database that no longer exist in Active Directory.
+        c.execute("SELECT * FROM Student")
+        db_users = c.fetchall()
+        for db_user in db_users:
+            guid = db_user[0]
+            student = Student.from_guid(guid)
+            if not student:
+                # Removed student
+                c.execute("DELETE FROM Student WHERE GUID = ?", (guid,))
+                print("Removed deleted student", guid)
+                
+        self.db_connection.commit()
+        
+        print("Done")
         
     def __sync_tablet_db(self):
         """Makes sure our local database contains all of the Active Directory tablets."""
-        print("Syncing local database with Active Directory...")
+        print("Syncing local tablet database with Active Directory...")
         
         c = self.db_connection.cursor()
         
