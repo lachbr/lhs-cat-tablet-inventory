@@ -18,7 +18,7 @@
     <item row="9" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -38,7 +38,7 @@
              </property>
              <layout class="QGridLayout" name="gridLayout_3">
               <item row="0" column="0">
-               <widget class="QRadioButton" name="radioButton">
+               <widget class="QRadioButton" name="radio_tablet_pcsb">
                 <property name="text">
                  <string>PCSB Tag</string>
                 </property>
@@ -48,21 +48,21 @@
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QRadioButton" name="radioButton_2">
+               <widget class="QRadioButton" name="radio_tablet_username">
                 <property name="text">
                  <string>Student/Faculty Name</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QRadioButton" name="radioButton_3">
+               <widget class="QRadioButton" name="radio_tablet_devicemodel">
                 <property name="text">
                  <string>Device Model</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QRadioButton" name="radioButton_4">
+               <widget class="QRadioButton" name="radio_tablet_serial">
                 <property name="text">
                  <string>Serial Number</string>
                 </property>
@@ -101,6 +101,18 @@
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
             <widget class="QTableWidget" name="tabletView">
+             <property name="editTriggers">
+              <set>QAbstractItemView::NoEditTriggers</set>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="sortingEnabled">
+              <bool>true</bool>
+             </property>
              <property name="rowCount">
               <number>0</number>
              </property>
@@ -157,7 +169,7 @@
              </property>
              <layout class="QGridLayout" name="gridLayout_4">
               <item row="0" column="0">
-               <widget class="QRadioButton" name="radioButton_5">
+               <widget class="QRadioButton" name="radio_user_name">
                 <property name="text">
                  <string>Name</string>
                 </property>
@@ -167,21 +179,21 @@
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QRadioButton" name="radioButton_6">
+               <widget class="QRadioButton" name="radio_user_tablet_pcsb">
                 <property name="text">
                  <string>Tablet PCSB Tag</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QRadioButton" name="radioButton_7">
+               <widget class="QRadioButton" name="radio_user_email">
                 <property name="text">
                  <string>E-Mail Address</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QRadioButton" name="radioButton_8">
+               <widget class="QRadioButton" name="radio_user_grade">
                 <property name="text">
                  <string>Grade</string>
                 </property>

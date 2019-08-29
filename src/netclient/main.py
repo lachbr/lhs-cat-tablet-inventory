@@ -11,6 +11,16 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 g_server_connection = None
 g_main_window = None
 
+T_SEARCHMODE_PCSB           = 0
+T_SEARCHMODE_SERIAL         = 1
+T_SEARCHMODE_DEVICE_MODEL   = 2
+T_SEARCHMODE_NAME           = 3
+
+U_SEARCHMODE_NAME           = 0
+U_SEARCHMODE_TABLET_PCSB    = 1
+U_SEARCHMODE_EMAIL          = 2
+U_SEARCHMODE_GRADE          = 3
+
 class ADTableWidgetItem(QtWidgets.QTableWidgetItem):
 
     def __init__(self, guid, text):
@@ -50,6 +60,21 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.ui.userView = self.ui.tabletView_2
         self.ui.userView.itemDoubleClicked.connect(self.__handle_double_click_user_item)
         
+        self.ui.radio_user_name.toggled.connect(self.__toggle_radio_user_name)
+        self.ui.radio_user_email.toggled.connect(self.__toggle_radio_user_email)
+        self.ui.radio_user_grade.toggled.connect(self.__toggle_radio_user_grade)
+        self.ui.radio_user_tablet_pcsb.toggled.connect(self.__toggle_radio_user_tablet_pcsb)
+        self.ui.facultySearchEntry.textChanged.connect(self.__handle_user_search_edited)
+        
+        self.ui.radio_tablet_pcsb.toggled.connect(self.__toggle_radio_tablet_pcsb)
+        self.ui.radio_tablet_serial.toggled.connect(self.__toggle_radio_tablet_serial)
+        self.ui.radio_tablet_username.toggled.connect(self.__toggle_radio_tablet_username)
+        self.ui.radio_tablet_devicemodel.toggled.connect(self.__toggle_radio_tablet_username)
+        self.ui.searchEntry.textChanged.connect(self.__handle_tablet_search_edited)
+        
+        self.user_search_mode = U_SEARCHMODE_NAME
+        self.tablet_search_mode = T_SEARCHMODE_PCSB
+        
         self.blink_second = 0
         self.blink_state = 0
         
@@ -64,6 +89,104 @@ class ClientWindow(QtWidgets.QMainWindow):
         
         self.__request_all_tablets()
         self.__request_all_users()
+    
+    def __handle_tablet_search_edited(self, text):
+        self.filter_tablet_table()
+        
+    def __handle_user_search_edited(self, text):
+        self.filter_user_table()
+        
+    ################################################################
+        
+    def __toggle_radio_user_name(self, flag):
+        if flag:
+            self.user_search_mode = U_SEARCHMODE_NAME
+            self.filter_user_table()
+    
+    def __toggle_radio_user_email(self, flag):
+        if flag:
+            self.user_search_mode = U_SEARCHMODE_EMAIL
+            self.filter_user_table()
+            
+    def __toggle_radio_user_grade(self, flag):
+        if flag:
+            self.user_search_mode = U_SEARCHMODE_GRADE
+            self.filter_user_table()
+    
+    def __toggle_radio_user_tablet_pcsb(self, flag):
+        if flag:
+            self.user_search_mode = U_SEARCHMODE_TABLET_PCSB
+            self.filter_user_table()
+            
+    ################################################################
+            
+    def __toggle_radio_tablet_pcsb(self, flag):
+        if flag:
+            self.tablet_search_mode = T_SEARCHMODE_PCSB
+            self.filter_tablet_table()
+            
+    def __toggle_radio_tablet_serial(self, flag):
+        if flag:
+            self.tablet_search_mode = T_SEARCHMODE_SERIAL
+            self.filter_tablet_table()
+            
+    def __toggle_radio_tablet_username(self, flag):
+        if flag:
+            self.tablet_search_mode = T_SEARCHMODE_NAME
+            self.filter_tablet_table()
+            
+    def __toggle_radio_tablet_devicemodel(self, flag):
+        if flag:
+            self.tablet_search_mode = T_SEARCHMODE_DEVICE_MODEL
+            self.filter_tablet_table()
+            
+    ################################################################
+    
+    def get_column_for_tablet_search_mode(self):
+        mode = self.tablet_search_mode
+        if mode == T_SEARCHMODE_PCSB:
+            return 0
+        elif mode == T_SEARCHMODE_DEVICE_MODEL:
+            return 1
+        elif mode == T_SEARCHMODE_SERIAL:
+            return 2
+        elif mode == T_SEARCHMODE_NAME:
+            return 4
+            
+    def get_column_for_user_search_mode(self):
+        mode = self.user_search_mode
+        if mode == U_SEARCHMODE_NAME:
+            return 0
+        elif mode == U_SEARCHMODE_EMAIL:
+            return 2
+        elif mode == U_SEARCHMODE_GRADE:
+            return 3
+        elif mode == U_SEARCHMODE_TABLET_PCSB:
+            return 5
+            
+    def filter_user_table(self):
+        print("Filtering user table")
+        self.filter_table(self.ui.userView,
+            self.get_column_for_user_search_mode(), self.ui.facultySearchEntry.text())
+            
+    def filter_tablet_table(self):
+        print("Filtering tablet table")
+        self.filter_table(self.ui.tabletView,
+            self.get_column_for_tablet_search_mode(), self.ui.searchEntry.text())
+    
+    def filter_table(self, table, column, filter_str):        
+        if len(filter_str) == 0:
+            for i in range(table.rowCount()):
+                table.showRow(i)
+            return
+            
+        for i in range(table.rowCount()):
+            table.hideRow(i)
+            
+        items = table.findItems(filter_str, QtCore.Qt.MatchContains)
+        for item in items:
+            if item.column() == column:
+                table.showRow(item.row())
         
     def __set_checkbox_state(self, cbox, string):
         flag = bool(int(string))
@@ -208,6 +331,8 @@ class ClientWindow(QtWidgets.QMainWindow):
             
         userView.setSortingEnabled(True)
         
+        self.filter_user_table()
+        
     def handle_get_all_tablets_resp(self, dgi):
         # Clear existing rows
         self.ui.tabletView.clearContents()
@@ -250,6 +375,8 @@ class ClientWindow(QtWidgets.QMainWindow):
             self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
             
         self.ui.tabletView.setSortingEnabled(True)
+        
+        self.filter_tablet_table()
         
     def __get_block(self, now):
         now_time = now.time()

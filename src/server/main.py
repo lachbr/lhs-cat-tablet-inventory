@@ -107,12 +107,18 @@ class Tablet(BaseTablet):
     
     @staticmethod
     def get_ad_tablet_from_guid(guid_str):
-        tablet = pyad.from_guid(guid_str)
+        try:
+            tablet = pyad.from_guid(guid_str)
+        except:
+            tablet = None
         return tablet
         
     @staticmethod
     def get_ad_tablet_from_name(name_str):
-        tablet = pyad.from_cn(name_str)
+        try:
+            tablet = pyad.from_cn(name_str)
+        except:
+            tablet = None
         return tablet
         
     @staticmethod
