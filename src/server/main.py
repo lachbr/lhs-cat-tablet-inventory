@@ -216,7 +216,7 @@ class Server:
         self.listener = core.QueuedConnectionListener(self.mgr, 1)
         self.reader = core.QueuedConnectionReader(self.mgr, 1)
         self.writer = core.ConnectionWriter(self.mgr, 1)
-        self.socket = self.mgr.open_TCP_server_rendezvous('127.0.0.1', 7035, 10)
+        self.socket = self.mgr.open_TCP_server_rendezvous(7035, 10)
         self.listener.add_connection(self.socket)
         
         domain = "cat.pcsb.org"
