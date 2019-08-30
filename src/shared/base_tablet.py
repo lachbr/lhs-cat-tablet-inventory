@@ -14,7 +14,6 @@ class BaseTablet:
             self.device_model = "Not Specified"
         
     def write_datagram(self, dg):
-        print(self.pcsb_tag, self.serial, self.device_model)
         dg.add_string(self.guid)
         dg.add_string(self.pcsb_tag)
         dg.add_string(self.serial)

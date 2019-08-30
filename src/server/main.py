@@ -438,6 +438,37 @@ class Server:
             if client.client_type == client_type:
                 clients.append(client.connection)
         return clients
+        
+    def __write_user_tablet(self, student, dg):
+        has_tablet = False
+        if student.tablet_guid:
+            tablet = Tablet.from_guid(student.tablet_guid)
+            if tablet:
+                has_tablet = True
+                dg.add_string(tablet.pcsb_tag)
+        if not has_tablet:
+            dg.add_string("No Tablet Assigned")
+            
+    def send(self, dg, connections):
+        if isinstance(connections, list):
+            for conn in connections:
+                self.writer.send(dg, conn)
+        else:
+            self.writer.send(dg, connections)
+        
+    def __send_user(self, guid, connections):
+        dg = core.Datagram()
+        dg.add_uint16(MSG_SERVER_UPDATE_USER)
+        
+        student = Student.from_guid(guid)
+        if not student:
+            return
+            
+        student.write_datagram(dg)
+        
+        self.__write_user_tablet(student, dg)
+        
+        self.send(dg, connections)
             
     def __send_all_users(self, connections):
         dg = core.Datagram()
@@ -455,24 +486,13 @@ class Server:
                 continue
             student.write_datagram(student_dg)
             
-            has_tablet = False
-            if student.tablet_guid:
-                tablet = Tablet.from_guid(student.tablet_guid)
-                if tablet:
-                    has_tablet = True
-                    student_dg.add_string(tablet.pcsb_tag)
-            if not has_tablet:
-                student_dg.add_string("No Tablet Assigned")
+            self.__write_user_tablet(student, student_dg)
             num_students += 1
             
         dg.add_uint16(num_students)
         dg.append_data(student_dg.get_message())
         
-        if isinstance(connections, list):
-            for conn in connections:
-                self.writer.send(dg, conn)
-        else:
-            self.writer.send(dg, connections)
+        self.send(dg, connections)
         
     def __handle_datagram_netassistant(self, connection, client, dgi, msg_type):
         if msg_type == MSG_CLIENT_GET_ALL_TABLETS:
@@ -562,30 +582,40 @@ class Server:
                     insurance_amt = dgi.get_string()
                     tablet_pcsb = dgi.get_string()
                     
+                    error = False
+                    
                     student = Student.from_guid(guid)
                     student.pcsb_agreement = pcsb_agreement
                     student.cat_agreement = cat_agreement
                     student.insurance_paid = insurance
                     student.insurance_amount = insurance_amt
                     if len(tablet_pcsb) > 0:
-                        student.tablet_guid = Tablet.from_pcsb_tag(tablet_pcsb).guid
+                        tablet = Tablet.from_pcsb_tag(tablet_pcsb)
+                        if not tablet:
+                            error = True
+                        else:
+                            student.tablet_guid = Tablet.from_pcsb_tag(tablet_pcsb).guid
                     else:
                         student.tablet_guid = None
                     student.update()
                     
                     dg = core.Datagram()
                     dg.add_uint16(MSG_SERVER_FINISH_EDIT_USER_RESP)
-                    
-                    try:
-                        student.update_link()
-                        dg.add_uint8(1)
-                    except Exception as e:
+
+                    if not error:
+                        try:
+                            student.update_link()
+                            dg.add_uint8(1)
+                        except Exception as e:
+                            error = True
+                            
+                    if error:
                         dg.add_uint8(0)
-                        dg.add_string("There was an error assigning the tablet:\n\n" + str(e))
+                        dg.add_string("There was an error assigning the tablet: already assigned or bad PCSB Tag")
                         
                     self.writer.send(dg, connection)
                     
-                    self.__send_all_users(self.get_all_client_connections(CLIENT_NET_ASSISTANT))
+                    self.__send_user(guid, self.get_all_client_connections(CLIENT_NET_ASSISTANT))
             else:
                 print("Suspicious: finished editing a user that wasn't being edited")
     

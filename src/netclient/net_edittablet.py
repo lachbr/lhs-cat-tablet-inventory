@@ -1,0 +1,98 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'net_edittablet.ui'
+#
+# Created by: PyQt5 UI code generator 5.13.0
+#
+# WARNING! All changes made in this file will be lost!
+
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+
+class Ui_EditTabletDialog(object):
+    def setupUi(self, EditTabletDialog):
+        EditTabletDialog.setObjectName("EditTabletDialog")
+        EditTabletDialog.resize(533, 393)
+        self.gridLayout = QtWidgets.QGridLayout(EditTabletDialog)
+        self.gridLayout.setObjectName("gridLayout")
+        self.buttonBox = QtWidgets.QDialogButtonBox(EditTabletDialog)
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        self.gridLayout.addWidget(self.buttonBox, 5, 1, 1, 1)
+        self.formLayout = QtWidgets.QFormLayout()
+        self.formLayout.setFieldGrowthPolicy(QtWidgets.QFormLayout.FieldsStayAtSizeHint)
+        self.formLayout.setObjectName("formLayout")
+        self.label_2 = QtWidgets.QLabel(EditTabletDialog)
+        self.label_2.setObjectName("label_2")
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_2)
+        self.deviceModelEntry = QtWidgets.QLineEdit(EditTabletDialog)
+        self.deviceModelEntry.setObjectName("deviceModelEntry")
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.SpanningRole, self.deviceModelEntry)
+        self.se = QtWidgets.QLabel(EditTabletDialog)
+        self.se.setObjectName("se")
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.se)
+        self.serialNoEntry = QtWidgets.QLineEdit(EditTabletDialog)
+        self.serialNoEntry.setObjectName("serialNoEntry")
+        self.formLayout.setWidget(4, QtWidgets.QFormLayout.SpanningRole, self.serialNoEntry)
+        self.label_3 = QtWidgets.QLabel(EditTabletDialog)
+        self.label_3.setObjectName("label_3")
+        self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_3)
+        self.studentCombo = QtWidgets.QComboBox(EditTabletDialog)
+        self.studentCombo.setObjectName("studentCombo")
+        self.formLayout.setWidget(6, QtWidgets.QFormLayout.SpanningRole, self.studentCombo)
+        self.groupBox = QtWidgets.QGroupBox(EditTabletDialog)
+        self.groupBox.setObjectName("groupBox")
+        self.gridLayout_2 = QtWidgets.QGridLayout(self.groupBox)
+        self.gridLayout_2.setObjectName("gridLayout_2")
+        self.issueTable = QtWidgets.QTableWidget(self.groupBox)
+        self.issueTable.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.issueTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.issueTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.issueTable.setObjectName("issueTable")
+        self.issueTable.setColumnCount(3)
+        self.issueTable.setRowCount(0)
+        item = QtWidgets.QTableWidgetItem()
+        self.issueTable.setHorizontalHeaderItem(0, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.issueTable.setHorizontalHeaderItem(1, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.issueTable.setHorizontalHeaderItem(2, item)
+        self.issueTable.horizontalHeader().setCascadingSectionResizes(False)
+        self.issueTable.horizontalHeader().setHighlightSections(True)
+        self.issueTable.horizontalHeader().setSortIndicatorShown(False)
+        self.issueTable.horizontalHeader().setStretchLastSection(True)
+        self.issueTable.verticalHeader().setStretchLastSection(False)
+        self.gridLayout_2.addWidget(self.issueTable, 1, 0, 1, 1)
+        self.label = QtWidgets.QLabel(self.groupBox)
+        font = QtGui.QFont()
+        font.setBold(True)
+        font.setWeight(75)
+        self.label.setFont(font)
+        self.label.setObjectName("label")
+        self.gridLayout_2.addWidget(self.label, 0, 0, 1, 1)
+        self.formLayout.setWidget(7, QtWidgets.QFormLayout.SpanningRole, self.groupBox)
+        self.gridLayout.addLayout(self.formLayout, 0, 1, 1, 1)
+
+        self.retranslateUi(EditTabletDialog)
+        self.buttonBox.accepted.connect(EditTabletDialog.accept)
+        self.buttonBox.rejected.connect(EditTabletDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(EditTabletDialog)
+
+    def retranslateUi(self, EditTabletDialog):
+        _translate = QtCore.QCoreApplication.translate
+        EditTabletDialog.setWindowTitle(_translate("EditTabletDialog", "Edit Tablet"))
+        self.label_2.setText(_translate("EditTabletDialog", "Device Model"))
+        self.deviceModelEntry.setPlaceholderText(_translate("EditTabletDialog", "Example: Dell Latitude 5285"))
+        self.se.setText(_translate("EditTabletDialog", "Serial Number"))
+        self.serialNoEntry.setPlaceholderText(_translate("EditTabletDialog", "Example: 6LR23M2"))
+        self.label_3.setText(_translate("EditTabletDialog", "Assigned Student"))
+        self.groupBox.setTitle(_translate("EditTabletDialog", "Issues"))
+        item = self.issueTable.horizontalHeaderItem(0)
+        item.setText(_translate("EditTabletDialog", "Date"))
+        item = self.issueTable.horizontalHeaderItem(1)
+        item.setText(_translate("EditTabletDialog", "Description"))
+        item = self.issueTable.horizontalHeaderItem(2)
+        item.setText(_translate("EditTabletDialog", "Resolved"))
+        self.label.setText(_translate("EditTabletDialog", "Active Issue: Yes"))

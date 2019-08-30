@@ -36,17 +36,17 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="se">
-       <property name="text">
-        <string>Serial Number</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="0" colspan="2">
       <widget class="QLineEdit" name="deviceModelEntry">
        <property name="placeholderText">
         <string>Example: Dell Latitude 5285</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="se">
+       <property name="text">
+        <string>Serial Number</string>
        </property>
       </widget>
      </item>
@@ -67,11 +67,69 @@
      <item row="6" column="0" colspan="2">
       <widget class="QComboBox" name="studentCombo"/>
      </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>TODO: issues</string>
+     <item row="7" column="0" colspan="2">
+      <widget class="QGroupBox" name="groupBox">
+       <property name="title">
+        <string>Issues</string>
        </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="1" column="0">
+         <widget class="QTableWidget" name="issueTable">
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <attribute name="horizontalHeaderCascadingSectionResizes">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="horizontalHeaderHighlightSections">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderStretchLastSection">
+           <bool>false</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string>Date</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Description</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Resolved</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="activeIssueLabel">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Active Issue: Yes</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
     </layout>

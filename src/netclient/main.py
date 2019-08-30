@@ -43,6 +43,8 @@ class ServerConnection(BaseServerConnection):
             g_main_window.handle_edit_tablet_resp(dgi)
         elif msg_type == MSG_SERVER_FINISH_EDIT_USER_RESP:
             g_main_window.handle_finish_edit_user_resp(dgi)
+        elif msg_type == MSG_SERVER_UPDATE_USER:
+            g_main_window.handle_update_user(dgi)
 
 class ClientWindow(QtWidgets.QMainWindow):
     
@@ -59,6 +61,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         
         self.ui.userView = self.ui.tabletView_2
         self.ui.userView.itemDoubleClicked.connect(self.__handle_double_click_user_item)
+        
+        self.ui.tabletView.itemDoubleClicked.connect(self.__handle_double_click_tablet_item)
         
         self.ui.radio_user_name.toggled.connect(self.__toggle_radio_user_name)
         self.ui.radio_user_email.toggled.connect(self.__toggle_radio_user_email)
@@ -78,14 +82,13 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.blink_second = 0
         self.blink_state = 0
         
-        self.tablet_guid_rows = {}
-        self.tablet_edit_req_row = 0
-        self.user_edit_req_item = None
-        self.user_editing_guid = None
+        self.edit_req_item = None
+        self.editing_guid = None
         
         self.please_wait_dialog = None
-        self.edit_user_dialog = None
-        self.edit_tablet_dialog = None
+        self.edit_dialog = None
+        
+        self.user_guid_names = {}
         
         self.__request_all_tablets()
         self.__request_all_users()
@@ -213,7 +216,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             
         dlg.open()
         dlg.finished.connect(self.__handle_edit_student_finish)
-        self.edit_user_dialog = (dlg, dlgconfig)
+        self.edit_dialog = (dlg, dlgconfig)
         
     def handle_finish_edit_user_resp(self, dgi):
         self.hide_please_wait()
@@ -227,10 +230,10 @@ class ClientWindow(QtWidgets.QMainWindow):
         
         dg = core.Datagram()
         dg.add_uint16(MSG_CLIENT_FINISH_EDIT_USER)
-        dg.add_string(self.user_editing_guid)
+        dg.add_string(self.editing_guid)
         dg.add_uint8(ret)
         if ret:
-            dlgcfg = self.edit_user_dialog[1]
+            dlgcfg = self.edit_dialog[1]
             dg.add_uint8(dlgcfg.pcsbAgreementCheckBox.checkState() != 0)
             dg.add_uint8(dlgcfg.catAgreementCheckBox.checkState() != 0)
             dg.add_uint8(dlgcfg.insuranceCheckBox.checkState() != 0)
@@ -239,7 +242,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             self.show_please_wait()
         g_server_connection.send(dg)
         
-        self.edit_user_dialog = None
+        self.edit_dialog = None
         
     def __request_all_tablets(self):
         dg = core.Datagram()
@@ -273,11 +276,11 @@ class ClientWindow(QtWidgets.QMainWindow):
         else:
             print("Edit it!")
             guid = dgi.get_string()
-            self.user_editing_guid = guid
-            self.open_edit_student_dialog(self.ui.tabletView_2.row(self.user_edit_req_item))
+            self.editing_guid = guid
+            self.open_edit_student_dialog(self.ui.tabletView_2.row(self.edit_req_item))
         
     def __handle_double_click_user_item(self, item):
-        self.user_edit_req_item = item
+        self.edit_req_item = item
         guid = item.guid
         print("Requesting edit for", guid)
         
@@ -288,10 +291,45 @@ class ClientWindow(QtWidgets.QMainWindow):
         
         self.show_please_wait()
         
-    def update_student_row(self, i, dgi):
+    def __handle_double_click_tablet_item(self, item):
+        self.edit_req_item = item
+        guid = item.guid
+        print("Requesting edit for tablet", guid)
+        
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_EDIT_TABLET)
+        dg.add_string(guid)
+        g_server_connection.send(dg)
+        
+        self.show_please_wait()
+        
+    def handle_edit_tablet_resp(self, dgi):
+        self.hide_please_wait()
+        flag = dgi.get_uint8()
+        if not flag:
+            QtWidgets.QMessageBox.information(self, "Error", "This tablet is currently being edited by someone else.")
+        else:
+            print("Now editing tablet")
+            guid = dgi.get_string()
+            self.editing_guid = guid
+            self.open_edit_tablet_dialog(self.ui.tabletView.row(self.edit_req_item))
+            
+    def open_edit_tablet_dialog(self, row):
+        print("Opening tablet edit dialog for row", row)
+        from src.netclient import net_edittablet
+        dlg = QtWidgets.QDialog(self)
+        dlgcfg = net_edittablet.Ui_EditTabletDialog()
+        dlgcfg.setupUi(dlg)
+        dlgcfg.deviceModelEntry.setText(self.ui.tabletView.item(row, 1).text())
+        dlgcfg.serialNoEntry.setText(self.ui.tabletView.item(row, 2).text())
+        dlg.open()
+        self.edit_dialog = (dlg, dlgcfg)
+        
+    def update_student_row(self, i, dgi, guid = None):
         userView = self.ui.tabletView_2
         
-        guid = dgi.get_string()
+        if not guid:
+            guid = dgi.get_string()
         name = dgi.get_string()
         firstLast = name.split(" ", 1)
         firstName = firstLast[0]
@@ -305,6 +343,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         cat_student = dgi.get_uint8()
         tablet_pcsb_tag = dgi.get_string()
         
+        self.user_guid_names[guid] = name
+        
         userView.setItem(i, 0, ADTableWidgetItem(guid, firstName))
         userView.setItem(i, 1, ADTableWidgetItem(guid, lastName))
         userView.setItem(i, 2, ADTableWidgetItem(guid, email))
@@ -316,8 +356,25 @@ class ClientWindow(QtWidgets.QMainWindow):
         userView.setItem(i, 8, ADTableWidgetItem(guid, str(insurance_paid)))
         userView.setItem(i, 9, ADTableWidgetItem(guid, insurance_amount))
         
+    def handle_update_user(self, dgi):
+        guid = dgi.get_string()
+        userView = self.ui.tabletView_2
+        row = None
+        # Find the row containing this user GUID
+        for i in range(userView.rowCount()):
+            if userView.item(i, 0).guid == guid:
+                row = i
+                break
+        if row is None:
+            print("Error: tried to update user row but couldn't find the row")
+            return
+           
+        self.update_student_row(row, dgi, guid)
+        
     def handle_get_all_users_resp(self, dgi):
         userView = self.ui.tabletView_2
+        
+        self.user_guid_names = {}
         
         # Clear existing rows
         userView.clearContents()
@@ -338,7 +395,6 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.ui.tabletView.clearContents()
         self.ui.tabletView.setRowCount(0)
         self.ui.tabletView.setSortingEnabled(False)
-        self.tablet_guid_rows = {}
         
         num_assigned_tablets = dgi.get_uint16()
         for i in range(num_assigned_tablets):
@@ -350,7 +406,6 @@ class ClientWindow(QtWidgets.QMainWindow):
             name = dgi.get_string()
             
             self.ui.tabletView.insertRow(i)
-            self.tablet_guid_rows[i] = guid
             self.ui.tabletView.setItem(i, 0, ADTableWidgetItem(guid, pcsb))
             self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
             self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
@@ -367,7 +422,6 @@ class ClientWindow(QtWidgets.QMainWindow):
             name = "Unassigned"
             
             self.ui.tabletView.insertRow(i)
-            self.tablet_guid_rows[i] = guid
             self.ui.tabletView.setItem(i, 0, ADTableWidgetItem(guid, pcsb))
             self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
             self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
