@@ -451,9 +451,11 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.user_guid_names[student.guid] = student.name
 
         if student in self.students:
+            print("Student already in list")
             idx = self.students.index(student)
             self.students[idx] = student
         else:
+            print("Add new student")
             self.students.append(student)
         
     def handle_update_user(self, dgi):

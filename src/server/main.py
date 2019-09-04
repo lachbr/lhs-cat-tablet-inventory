@@ -434,9 +434,16 @@ class Server:
             
         elif msg_type == MSG_CLIENT_SUBMIT_ISSUE:
             pcsb_tag = dgi.get_string()
+            tablet = Tablet.from_pcsb_tag(pcsb_tag)
+            if not tablet:
+                print("Can't submit issue, pcsb tag %s not found" % pcsb_tag)
+                return
             incident_desc = dgi.get_string()
             incident_date = dgi.get_string()
             problem_desc = dgi.get_string()
+            c = self.db_connection.cursor()
+            c.execute("INSERT INTO TabletIssue VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (0, tablet.guid, incident_desc, problem_desc, incident_date, 0, "", "", -1, "", 0, "", "", 0))
+            self.db_connection.commit()
             print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc))
             
     def get_all_client_connections(self, client_type):
