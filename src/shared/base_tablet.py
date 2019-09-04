@@ -1,8 +1,8 @@
 class BaseTablet:
 
-    def __init__(self, ad_tablet, pcsb_tag, serial = None, devicemodel = None, student_guid = None):
+    def __init__(self, guid = None, pcsb_tag = None, serial = None, devicemodel = None, student_guid = None, ad_tablet = None):
         self.ad_tablet = ad_tablet
-        self.guid = ad_tablet.guid_str
+        self.guid = guid
         self.pcsb_tag = pcsb_tag
         self.serial = serial
         self.device_model = devicemodel
@@ -18,7 +18,19 @@ class BaseTablet:
         dg.add_string(self.pcsb_tag)
         dg.add_string(self.serial)
         dg.add_string(self.device_model)
-        #dg.add_string(
+        if self.student_guid:
+            dg.add_string(self.student_guid)
+        else:
+            dg.add_string("")
+        
+    @staticmethod
+    def from_datagram(dgi):
+        guid = dgi.get_string()
+        pcsb = dgi.get_string()
+        serial = dgi.get_string()
+        device = dgi.get_string()
+        student_guid = dgi.get_string()
+        return BaseTablet(guid, pcsb, serial, device, student_guid)
         
     def __str__(self):
         return (

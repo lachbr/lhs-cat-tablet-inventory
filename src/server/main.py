@@ -1,7 +1,11 @@
 from panda3d import core
 
 from src.shared.Consts import *
+from src.shared.issue import Issue
+from src.shared.issue_step import IssueStep
+from src.shared.student import Student
 from src.shared.base_tablet import BaseTablet
+from src.shared.student_tablet_link import StudentTabletLink
 
 from pyad import *
 
@@ -75,6 +79,10 @@ class Student:
         dg.add_uint8(self.insurance_paid)
         dg.add_string(self.insurance_amount)
         dg.add_uint8(self.cat_student)
+        if self.tablet_guid:
+            dg.add_string(self.tablet_guid)
+        else:
+            dg.add_string("")
         
     def update(self):
         c = g_server_connection.db_connection.cursor()
@@ -157,7 +165,7 @@ class Tablet(BaseTablet):
         tablet_info = c.fetchone()
         if not tablet_info:
             # In active directory but not inventory
-            return Tablet(ad_tablet, pcsb_tag)
+            return Tablet(ad_tablet.guid_str, pcsb_tag, ad_tablet = ad_tablet)
             
         # Find the student with the tablet
         student_guid = None
@@ -166,13 +174,12 @@ class Tablet(BaseTablet):
         if link:
             student_guid = link[0]
         
-        return Tablet(ad_tablet, pcsb_tag, tablet_info[1], tablet_info[2], student_guid)
+        return Tablet(ad_tablet.guid_str, pcsb_tag, tablet_info[1], tablet_info[2], student_guid, ad_tablet)
         
     @staticmethod
     def from_pcsb_tag(pcsb_tag):
         pcsb_tag = pcsb_tag.replace('-', '')
         name_str = Tablet.NAME_PREFIX + pcsb_tag
-        print(name_str)
         return Tablet.from_active_directory_tablet(Tablet.get_ad_tablet_from_name(name_str))
         
     def update(self):
@@ -466,8 +473,6 @@ class Server:
             
         student.write_datagram(dg)
         
-        self.__write_user_tablet(student, dg)
-        
         self.send(dg, connections)
             
     def __send_all_users(self, connections):
@@ -485,8 +490,6 @@ class Server:
             if not student:
                 continue
             student.write_datagram(student_dg)
-            
-            self.__write_user_tablet(student, student_dg)
             num_students += 1
             
         dg.add_uint16(num_students)
@@ -500,10 +503,8 @@ class Server:
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_GET_ALL_TABLETS_RESP)
             
-            assigned_dg = core.Datagram()
-            unassigned_dg = core.Datagram()
-            num_assigned_tablets = 0
-            num_unassigned_tablets = 0
+            tablet_dg = core.Datagram()
+            num_tablets = 0
             
             all_tablets = Tablet.get_ad_tablet_list()
             for ad_tablet in all_tablets:
@@ -511,20 +512,11 @@ class Server:
                 if not tablet:
                     continue
                     
-                if tablet.student_guid:
-                    tablet.write_datagram(assigned_dg)
-                    student = Student.from_guid(tablet.student_guid)
-                    assigned_dg.add_string(student.name)
-                    num_assigned_tablets += 1
-                else:
-                    tablet.write_datagram(unassigned_dg)
-                    num_unassigned_tablets += 1
-                   
-            # Write the assigned tablets, then unassigned tablets
-            dg.add_uint16(num_assigned_tablets)
-            dg.append_data(assigned_dg.get_message())
-            dg.add_uint16(num_unassigned_tablets)
-            dg.append_data(unassigned_dg.get_message())
+                tablet.write_datagram(tablet_dg)
+                num_tablets += 1
+                
+            dg.add_uint16(num_tablets)
+            dg.append_data(tablet_dg.get_message())
             
             self.writer.send(dg, connection)
             
@@ -567,6 +559,48 @@ class Server:
                 self.tablets_being_edited.remove(guid)
             else:
                 print("Suspicious: finished editing a tablet that wasn't being edited")
+                
+        elif msg_type == MSG_CLIENT_GET_ALL_ISSUES:
+            c = self.db_connection.cursor()
+            c.execute("SELECT * FROM TabletIssue")
+            issues = c.fetchall()
+            num_issues = len(issues)
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_GET_ALL_ISSUES_RESP)
+            dg.add_uint32(num_issues)
+            for i in range(num_issues):
+                data = issues[i]
+                issue = Issue(*data)
+                issue.write_datagram(dg)
+            self.writer.send(dg, connection)
+            
+        elif msg_type == MSG_CLIENT_GET_ALL_ISSUE_STEPS:
+            c = self.db_connection.cursor()
+            c.execute("SELECT * FROM TabletIssueStep")
+            steps = c.fetchall()
+            num_steps = len(steps)
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_GET_ALL_ISSUE_STEPS_RESP)
+            dg.add_uint32(num_steps)
+            for i in range(num_steps):
+                data = steps[i]
+                step = IssueStep(*data)
+                step.write_datagram(dg)
+            self.writer.send(dg, connection)
+            
+        elif msg_type == MSG_CLIENT_GET_ALL_LINKS:
+            c = self.db_connection.cursor()
+            c.execute("SELECT * FROM StudentTabletLink")
+            links = c.fetchall()
+            num_links = len(links)
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_GET_ALL_LINKS_RESP)
+            dg.add_uint32(num_links)
+            for i in range(num_links):
+                data = links[i]
+                link = StudentTabletLink(*data)
+                link.write_datagram(dg)
+            self.writer.send(dg, connection)
                 
         elif msg_type == MSG_CLIENT_FINISH_EDIT_USER:
             guid = dgi.get_string()
