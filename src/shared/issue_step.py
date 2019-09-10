@@ -14,6 +14,21 @@ class IssueStep:
         dg.add_string(self.step_desc)
         dg.add_string(self.team_member_guid)
         
+    def write_database(self, c):
+        c.execute("SELECT * FROM TabletIssueStep WHERE ID = ?", (self.step_id,))
+        existing = c.fetchone()
+        if not existing:
+            c.execute("INSERT INTO TabletIssueStep VALUES (?,?,?,?,?)",
+                (self.step_id, self.issue_id, self.date_of_step, self.step_desc, self.team_member_guid))
+        else:
+            print("Tried to write an already existing TabletIssueStep to database (TabletIssueSteps are not mutable)")
+        
+    def __eq__(self, other):
+        return self.step_id == other.step_id
+        
+    def __str__(self):
+        return """IssueStep(%s, %s, %s, %s, %s)""" % (self.step_id, self.issue_id, self.date_of_step, self.step_desc, self.team_member_guid)
+        
     @staticmethod
     def from_datagram(dg):
         sid             = dgi.get_uint32()
@@ -21,4 +36,4 @@ class IssueStep:
         date_of_step    = dgi.get_string()
         step_desc       = dgi.get_string()
         hwguid          = dgi.get_string()
-        return TabletIssueStep(sid, iid, date_of_step, step_desc, hwguid)
+        return IssueStep(sid, iid, date_of_step, step_desc, hwguid)

@@ -13,6 +13,7 @@ class Student:
         student.insurance_amount = dgi.get_string()
         student.cat_student = dgi.get_uint8()
         student.tablet_guid = dgi.get_string()
+        student.net_assistant = dgi.get_uint8()
         return student
         
     def __eq__(self, other):

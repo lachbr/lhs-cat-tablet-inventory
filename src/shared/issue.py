@@ -21,6 +21,30 @@ class Issue:
         self.return_date = return_date
         self.resolved = resolved
         
+    def __eq__(self, other):
+        return self.issue_id == other.issue_id
+        
+    def write_database(self, c):
+        c.execute("SELECT * FROM TabletIssue WHERE ID = ?", (self.issue_id,))
+        existing = c.fetchone()
+        if not existing:
+            c.execute("INSERT INTO TabletIssue VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (self.issue_id, self.tablet_guid, self.incident_desc, self.problems_desc,
+                 self.date_of_incident, self.parts_ordered, self.parts_ordered_date,
+                 self.parts_expected_date, self.insurance_or_warranty, self.fixed_desc,
+                 self.tablet_returned, self.team_member_guid, self.return_date,
+                 self.resolved))
+        else:
+            # Only a select set of properties can be changed on an issue once already
+            # submitted.
+            c.execute(
+            """UPDATE TabletIssue SET PartsOrdered = ?, PartsOrderedDate = ?, PartsExpectedDate = ?,
+            InsuranceOrWarranty = ?, FixedDescription = ?, TabletReturned = ?, ReturnDate = ?,
+            Resolved = ? WHERE ID = ?""",
+            (self.parts_ordered, self.parts_ordered_date, self.parts_expected_date,
+            self.insurance_or_warranty, self.fixed_desc, self.tablet_returned,
+            self.return_date, self.resolved, self.issue_id))
+        
     def write_datagram(self, dg):
         dg.add_uint32(self.issue_id)
         dg.add_string(self.tablet_guid)
@@ -44,7 +68,7 @@ class Issue:
         incident_desc       = dgi.get_string()
         problems_desc       = dgi.get_string()
         doi                 = dgi.get_string()
-        parts_ordered       = dgi.get_string()
+        parts_ordered       = dgi.get_uint8()
         parts_ordered_date  = dgi.get_string()
         parts_expected_date = dgi.get_string()
         iow                 = dgi.get_uint8()
@@ -52,7 +76,7 @@ class Issue:
         returned            = dgi.get_uint8()
         hwguid              = dgi.get_string()
         return_date         = dgi.get_string()
-        resolved            = dgi.get_string()
+        resolved            = dgi.get_uint8()
         
         return Issue(iid, tablet_guid, incident_desc, problems_desc, doi,
                      parts_ordered, parts_ordered_date, parts_expected_date,

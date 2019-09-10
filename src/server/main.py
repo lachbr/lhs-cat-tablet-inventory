@@ -15,6 +15,9 @@ g_server_connection = None
 
 class Student:
 
+    CAT_GROUP = "ou=+AllCATStudents"
+    NET_GROUP = "ou=+NetworkAssistants"
+
     @staticmethod
     def get_ad_cat_student_list():
         cat_students = pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org").get_children()
@@ -64,8 +67,11 @@ class Student:
         self.cat_agreement = cat_agreement
         self.insurance_paid = insurance_paid
         self.insurance_amount = insurance_amount
-        # They are a CAT student if in the +AllCATStudents container
-        self.cat_student = pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org") is not None
+        
+        group_name = ad_student.parent_container.prefixed_cn
+        self.cat_student = group_name in [Student.NET_GROUP, Student.CAT_GROUP]
+        self.net_assistant = group_name == Student.NET_GROUP
+
         self.tablet_guid = tablet_guid
         self.orig_tablet_guid = tablet_guid
         
@@ -83,6 +89,7 @@ class Student:
             dg.add_string(self.tablet_guid)
         else:
             dg.add_string("")
+        dg.add_uint8(self.net_assistant)
         
     def update(self):
         c = g_server_connection.db_connection.cursor()
@@ -419,17 +426,20 @@ class Server:
                 return
                 
             if not tablet.student_guid:
-                print("No student assigned to tablet %s" % pcsb_tag)
-                dg.add_uint8(0)
-                self.writer.send(dg, connection)
-                return
-            student = Student.from_guid(tablet.student_guid)
+                student_name = ""
+                student_email = ""
+                student_grade = ""
+            else:
+                student = Student.from_guid(tablet.student_guid)
+                student_name = student.name
+                student_grade = student.grade
+                student_email = student.email
             
             dg.add_uint8(1)
             tablet.write_datagram(dg)
-            dg.add_string(student.name)
-            dg.add_string(student.grade)
-            dg.add_string(student.email)
+            dg.add_string(student_name)
+            dg.add_string(student_grade)
+            dg.add_string(student_email)
             self.writer.send(dg, connection)
             
         elif msg_type == MSG_CLIENT_SUBMIT_ISSUE:
@@ -442,7 +452,8 @@ class Server:
             incident_date = dgi.get_string()
             problem_desc = dgi.get_string()
             c = self.db_connection.cursor()
-            c.execute("INSERT INTO TabletIssue VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (0, tablet.guid, incident_desc, problem_desc, incident_date, 0, "", "", -1, "", 0, "", "", 0))
+            issue = Issue(0, tablet.guid, incident_desc, problem_desc, incident_date, 0, "", "", -1, "", 0, "", "", 0)
+            issue.write_database(c)
             self.db_connection.commit()
             print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc))
             
@@ -560,10 +571,27 @@ class Server:
             self.writer.send(dg, connection)
             
         elif msg_type == MSG_CLIENT_FINISH_EDIT_TABLET:
-            guid = dgi.get_string()
+            mod_tablet = BaseTablet.from_datagram(dgi)
+            mod_tablet.__class__ = Tablet # hack
+            mod_tablet.update()
+            guid = mod_tablet.guid
             if guid in self.tablets_being_edited:
                 print("Done editing tablet", guid)
                 self.tablets_being_edited.remove(guid)
+                
+                c = self.db_connection.cursor()
+                
+                num_issues = dgi.get_uint16()
+                for i in range(num_issues):
+                    issue = Issue.from_datagram(dgi)
+                    issue.write_database(c)
+                    
+                num_steps = dgi.get_uint16()
+                for i in range(num_steps):
+                    step = IssueStep.from_datagram(dgi)
+                    step.write_database(c)
+                    
+                self.db_connection.commit()
             else:
                 print("Suspicious: finished editing a tablet that wasn't being edited")
                 

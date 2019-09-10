@@ -379,14 +379,19 @@ class ClientWindow(QtWidgets.QMainWindow):
             
     def open_edit_tablet_dialog(self, row):
         print("Opening tablet edit dialog for row", row)
-        from src.netclient import net_edittablet
-        dlg = QtWidgets.QDialog(self)
-        dlgcfg = net_edittablet.Ui_EditTabletDialog()
-        dlgcfg.setupUi(dlg)
-        dlgcfg.deviceModelEntry.setText(self.ui.tabletView.item(row, 1).text())
-        dlgcfg.serialNoEntry.setText(self.ui.tabletView.item(row, 2).text())
-        dlg.open()
-        self.edit_dialog = (dlg, dlgcfg)
+        guid = self.ui.tabletView.item(row, 0).guid
+        
+        from src.netclient.tablet_editing import TabletEditing
+        self.edit_dialog = TabletEditing(self, guid, row)
+        
+    def send_finish_edit_tablet(self, dg):
+        #dg = core.Datagram()
+        #dg.add_uint16(MSG_CLIENT_FINISH_EDIT_TABLET)
+        #dg.add_string(self.editing_guid)
+        g_server_connection.send(dg)
+        #self.show_please_wait()
+        
+        #self.editing_guid = None
         
     def update_student_row_ui(self, i, student):
         userView = self.ui.tabletView_2
