@@ -12,6 +12,9 @@ class BaseTablet:
             self.serial = "Not Specified"
         if devicemodel is None:
             self.device_model = "Not Specified"
+            
+    def __eq__(self, other):
+        return self.guid == other.guid
         
     def write_datagram(self, dg):
         dg.add_string(self.guid)

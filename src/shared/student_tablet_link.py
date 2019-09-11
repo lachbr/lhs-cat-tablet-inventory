@@ -3,6 +3,9 @@ class StudentTabletLink:
     def __init__(self, student_guid = None, tablet_guid = None):
         self.tablet_guid = tablet_guid
         self.student_guid = student_guid
+        
+    def __eq__(self, other):
+        return self.tablet_guid == other.tablet_guid
 
     @staticmethod
     def from_datagram(dgi):

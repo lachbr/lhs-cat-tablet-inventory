@@ -27,9 +27,9 @@ class Issue:
     def write_database(self, c):
         c.execute("SELECT * FROM TabletIssue WHERE ID = ?", (self.issue_id,))
         existing = c.fetchone()
-        if not existing:
-            c.execute("INSERT INTO TabletIssue VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (self.issue_id, self.tablet_guid, self.incident_desc, self.problems_desc,
+        if not existing or self.issue_id < 0:
+            c.execute("INSERT INTO TabletIssue VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (self.tablet_guid, self.incident_desc, self.problems_desc,
                  self.date_of_incident, self.parts_ordered, self.parts_ordered_date,
                  self.parts_expected_date, self.insurance_or_warranty, self.fixed_desc,
                  self.tablet_returned, self.team_member_guid, self.return_date,
@@ -46,7 +46,7 @@ class Issue:
             self.return_date, self.resolved, self.issue_id))
         
     def write_datagram(self, dg):
-        dg.add_uint32(self.issue_id)
+        dg.add_int32(self.issue_id)
         dg.add_string(self.tablet_guid)
         dg.add_string(self.incident_desc)
         dg.add_string(self.problems_desc)
@@ -63,7 +63,7 @@ class Issue:
         
     @staticmethod
     def from_datagram(dgi):
-        iid                 = dgi.get_uint32()
+        iid                 = dgi.get_int32()
         tablet_guid         = dgi.get_string()
         incident_desc       = dgi.get_string()
         problems_desc       = dgi.get_string()

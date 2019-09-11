@@ -192,7 +192,7 @@ class Tablet(BaseTablet):
     def update(self):
         c = g_server_connection.db_connection.cursor()
         c.execute(
-            "UPDATE Tablet SET SerialNumber = ?, SET DeviceModel = ? WHERE GUID = ?",
+            "UPDATE Tablet SET SerialNumber = ?, DeviceModel = ? WHERE GUID = ?",
             (self.serial, self.device_model, self.guid)
         )
         g_server_connection.db_connection.commit()
@@ -452,7 +452,7 @@ class Server:
             incident_date = dgi.get_string()
             problem_desc = dgi.get_string()
             c = self.db_connection.cursor()
-            issue = Issue(0, tablet.guid, incident_desc, problem_desc, incident_date, 0, "", "", -1, "", 0, "", "", 0)
+            issue = Issue(-1, tablet.guid, incident_desc, problem_desc, incident_date, 0, "", "", 2, "", 0, "", "", 0)
             issue.write_database(c)
             self.db_connection.commit()
             print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc))
@@ -571,27 +571,50 @@ class Server:
             self.writer.send(dg, connection)
             
         elif msg_type == MSG_CLIENT_FINISH_EDIT_TABLET:
+            ret = dgi.get_uint8()
+            
             mod_tablet = BaseTablet.from_datagram(dgi)
-            mod_tablet.__class__ = Tablet # hack
-            mod_tablet.update()
+            
             guid = mod_tablet.guid
             if guid in self.tablets_being_edited:
+                if ret:
+                    mod_tablet.__class__ = Tablet # hack
+                    mod_tablet.update()
+                    
+                    c = self.db_connection.cursor()
+                    
+                    issues_dg = core.Datagram()
+                    issues_dg.add_uint16(MSG_SERVER_UPDATE_ISSUE)
+                    num_issues = dgi.get_uint16()
+                    issues_dg.add_uint16(num_issues)
+                    for i in range(num_issues):
+                        issue = Issue.from_datagram(dgi)
+                        issue.write_database(c)
+                        issue.write_datagram(issues_dg)
+                    
+                    steps_dg = core.Datagram()
+                    steps_dg.add_uint16(MSG_SERVER_UPDATE_ISSUE_STEP)
+                    num_steps = dgi.get_uint16()
+                    steps_dg.add_uint16(num_steps)
+                    for i in range(num_steps):
+                        step = IssueStep.from_datagram(dgi)
+                        step.write_database(c)
+                        step.write_datagram(steps_dg)
+                    
+                    tablet_dg = core.Datagram()
+                    tablet_dg.add_uint16(MSG_SERVER_UPDATE_TABLET)
+                    mod_tablet.write_datagram(tablet_dg)
+                    
+                    # Send the updated data to all net clients.
+                    netconns = self.get_all_client_connections(CLIENT_NET_ASSISTANT)
+                    self.send(issues_dg, netconns)
+                    self.send(steps_dg, netconns)
+                    self.send(tablet_dg, netconns)
+                        
+                    self.db_connection.commit()
+                    
                 print("Done editing tablet", guid)
                 self.tablets_being_edited.remove(guid)
-                
-                c = self.db_connection.cursor()
-                
-                num_issues = dgi.get_uint16()
-                for i in range(num_issues):
-                    issue = Issue.from_datagram(dgi)
-                    issue.write_database(c)
-                    
-                num_steps = dgi.get_uint16()
-                for i in range(num_steps):
-                    step = IssueStep.from_datagram(dgi)
-                    step.write_database(c)
-                    
-                self.db_connection.commit()
             else:
                 print("Suspicious: finished editing a tablet that wasn't being edited")
                 
