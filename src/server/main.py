@@ -13,6 +13,8 @@ import sqlite3
 
 g_server_connection = None
 
+SYNC_ACTIVE_DIRECTORY = False
+
 class Student:
 
     CAT_GROUP = "ou=+AllCATStudents"
@@ -212,6 +214,8 @@ class Client:
         self.connection_id = str(conn.this)
         self.rendezvous = rendezvous
         self.client_type = CLIENT_UNIDENTIFIED
+        self.tablet_editing = None
+        self.user_editing = None
         
     def is_identified(self):
         return self.client_type != CLIENT_UNIDENTIFIED
@@ -251,8 +255,9 @@ class Server:
         self.tablets_being_edited = []
         self.users_being_edited = []
         
-        self.__sync_tablet_db()
-        self.__sync_user_db()
+        if SYNC_ACTIVE_DIRECTORY:
+            self.__sync_tablet_db()
+            self.__sync_user_db()
         
         print("Server is now running.")
         
@@ -382,6 +387,16 @@ class Server:
             print("-----------------------------------")
             print("Farewell connection...")
             print("ConnectionID: %s" % lost_conn.this)
+            client = self.clients[str(lost_conn.this)]
+            
+            # Free up any users/tablets that were being edited by this client.
+            if client.user_editing is not None and client.user_editing in self.users_being_edited:
+                print("Client was editing user", client.user_editing)
+                self.users_being_edited.remove(client.user_editing)
+            if client.tablet_editing is not None and client.tablet_editing in self.tablets_being_edited:
+                print("Client was editing tablet", client.tablet_editing)
+                self.tablets_being_edited.remove(client.tablet_editing)
+                
             del self.clients[str(lost_conn.this)]
             self.mgr.close_connection(lost_conn)
                 
@@ -456,6 +471,12 @@ class Server:
             issue.write_database(c)
             self.db_connection.commit()
             print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc))
+            
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_UPDATE_ISSUE)
+            dg.add_uint16(1)
+            issue.write_datagram(dg)
+            self.send(dg, self.get_all_client_connections(CLIENT_NET_ASSISTANT))
             
     def get_all_client_connections(self, client_type):
         clients = []
@@ -546,14 +567,13 @@ class Server:
             print("Received edit user request for guid:", guid)
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_EDIT_USER_RESP)
-            if not guid in self.users_being_edited:
-                print("not being edited")
+            if not guid in self.users_being_edited and client.user_editing is None:
                 dg.add_uint8(1)
                 dg.add_string(guid)
+                client.user_editing = guid
                 self.users_being_edited.append(guid)
             else:
                 # User is already being edited by another client
-                print("Already being edited")
                 dg.add_uint8(0)
             self.writer.send(dg, connection)
             
@@ -561,9 +581,10 @@ class Server:
             guid = dgi.get_string()
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_EDIT_TABLET_RESP)
-            if not guid in self.tablets_being_edited:
+            if not guid in self.tablets_being_edited and client.tablet_editing is None:
                 dg.add_uint8(1)
                 dg.add_string(guid)
+                client.tablet_editing = guid
                 self.tablets_being_edited.append(guid)
             else:
                 # Tablet is already being edited by another client
@@ -576,7 +597,7 @@ class Server:
             mod_tablet = BaseTablet.from_datagram(dgi)
             
             guid = mod_tablet.guid
-            if guid in self.tablets_being_edited:
+            if guid in self.tablets_being_edited and client.tablet_editing == guid:
                 if ret:
                     mod_tablet.__class__ = Tablet # hack
                     mod_tablet.update()
@@ -614,6 +635,7 @@ class Server:
                     self.db_connection.commit()
                     
                 print("Done editing tablet", guid)
+                client.tablet_editing = None
                 self.tablets_being_edited.remove(guid)
             else:
                 print("Suspicious: finished editing a tablet that wasn't being edited")
@@ -662,8 +684,9 @@ class Server:
                 
         elif msg_type == MSG_CLIENT_FINISH_EDIT_USER:
             guid = dgi.get_string()
-            if guid in self.users_being_edited:
+            if guid in self.users_being_edited and client.user_editing == guid:
                 print("Done editing user", guid)
+                client.user_editing = None
                 self.users_being_edited.remove(guid)
                 
                 ret = dgi.get_uint8()
@@ -708,6 +731,19 @@ class Server:
                     self.writer.send(dg, connection)
                     
                     self.__send_user(guid, self.get_all_client_connections(CLIENT_NET_ASSISTANT))
+
+                    # Send the updated link, if there is one
+                    c = self.db_connection.cursor()
+                    c.execute("SELECT * FROM StudentTabletLink WHERE StudentGUID = ?", (student.guid,))
+                    link = c.fetchone()
+                    if link:
+                        dg = core.Datagram()
+                        dg.add_uint16(MSG_SERVER_UPDATE_LINK)
+                        dg.add_uint16(1)
+                        slink = StudentTabletLink(*link)
+                        slink.write_datagram(dg)
+                        self.send(dg, self.get_all_client_connections(CLIENT_NET_ASSISTANT))
+                    
             else:
                 print("Suspicious: finished editing a user that wasn't being edited")
     

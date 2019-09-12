@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, Qt, QtCore
 
 from panda3d import core
 
@@ -90,6 +90,7 @@ class TabletEditing:
             dg.add_uint16(len(self.new_steps))
             for i in range(len(self.new_steps)):
                 step = self.new_steps[i]
+                step.step_id = -1 # signifies new step
                 step.write_datagram(dg)
             self.mgr.send_finish_edit_tablet(dg)
         else:
@@ -109,7 +110,7 @@ class TabletEditing:
             hws = [hw for hw in self.mgr.students if hw.name == hwname]
             hwguid = hws[0].guid if len(hws) > 0 else ""
             date = utils.get_date_string()
-            step = issue_step.IssueStep(-1, self.editing_issue.issue_id, date, desc, hwguid)
+            step = issue_step.IssueStep(len(self.new_steps), self.editing_issue.issue_id, date, desc, hwguid)
             self.new_steps.append(step)
             self.insert_step(step)
         self.new_step_dialog = None
@@ -127,6 +128,8 @@ class TabletEditing:
             dlgcfg.teamMemberCombo.addItem(hw.name)
             hwnames.append(hw.name)
         completer = QtWidgets.QCompleter(hwnames)
+        completer.setCompletionMode(QtWidgets.QCompleter.InlineCompletion)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
         dlgcfg.teamMemberCombo.setEditable(True)
         dlgcfg.teamMemberCombo.setCompleter(completer)
         dlg.finished.connect(self.__handle_new_step_finish)

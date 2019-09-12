@@ -65,6 +65,8 @@ class ServerConnection(BaseServerConnection):
             g_main_window.handle_new_issue(dgi)
         elif msg_type == MSG_SERVER_UPDATE_ISSUE_STEP:
             g_main_window.handle_new_issue_step(dgi)
+        elif msg_type == MSG_SERVER_UPDATE_LINK:
+            g_main_window.handle_update_link(dgi)
 
 class ClientWindow(QtWidgets.QMainWindow):
     
@@ -479,11 +481,7 @@ class ClientWindow(QtWidgets.QMainWindow):
 
         self.user_guid_names[student.guid] = student.name
 
-        if student in self.students:
-            idx = self.students.index(student)
-            self.students[idx] = student
-        else:
-            self.students.append(student)
+        utils.list_add_replace(self.students, student)
             
     def find_table_guid_row(self, table, guid):
         row = None
@@ -509,29 +507,37 @@ class ClientWindow(QtWidgets.QMainWindow):
         num_issues = dgi.get_uint16()
         for i in range(num_issues):
             issue = Issue.from_datagram(dgi)
-            if issue in self.issues:
-                idx = self.issues.index(issue)
-                self.issues[idx] = issue
-            else:
-                self.issues.append(issue)
+            utils.list_add_replace(self.issues, issue)
+            
+            tablets = [tablet for tablet in self.tablets if tablet.guid == issue.tablet_guid]
+            tablet = tablets[0] if len(tablets) > 0 else None
+            if tablet and self.tablet_table_generated:
+                self.update_tablet_row_ui(self.find_table_guid_row(self.ui.tabletView, tablet.guid), tablet)
                 
     def handle_new_issue_step(self, dgi):
         num_steps = dgi.get_uint16()
         for i in range(num_steps):
             step = IssueStep.from_datagram(dgi)
-            if step in self.issue_steps:
-                idx = self.issue_steps.index(step)
-                self.issue_steps[idx] = step
-            else:
-                self.issue_steps.append(step)
+            utils.list_add_replace(self.issue_steps, step)
+                
+    def handle_update_link(self, dgi):
+        num_links = dgi.get_uint16()
+        for i in range(num_links):
+            link = StudentTabletLink.from_datagram(dgi)
+            utils.list_add_replace(self.student_tablet_links, link)
+            
+            tablets = [tablet for tablet in self.tablets if tablet.guid == link.tablet_guid]
+            tablet = tablets[0] if len(tablets) > 0 else None
+            users = [user for user in self.students if user.guid == link.student_guid]
+            user = users[0] if len(users) > 0 else None
+            if tablet and self.tablet_table_generated:
+                self.update_tablet_row_ui(self.find_table_guid_row(self.ui.tabletView, tablet.guid), tablet)
+            if user and self.user_table_generated:
+                self.update_student_row_ui(self.find_table_guid_row(self.ui.tabletView_2, user.guid), user)
                 
     def handle_update_tablet(self, dgi):
         tablet = BaseTablet.from_datagram(dgi)
-        if tablet in self.tablets:
-            idx = self.tablets.index(tablet)
-            self.tablets[idx] = tablet
-        else:
-            self.tablets.append(tablet)
+        utils.list_add_replace(self.tablets, tablet)
             
         if self.tablet_table_generated:
             row = self.find_table_guid_row(self.ui.tabletView, tablet.guid)
