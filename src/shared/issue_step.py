@@ -18,6 +18,11 @@ class IssueStep:
         c.execute("SELECT * FROM TabletIssueStep WHERE ID = ?", (self.step_id,))
         existing = c.fetchone()
         if not existing or self.step_id < 0:
+        
+            c.execute("SELECT * FROM TabletIssueStep")
+            steps = c.fetchall()
+            self.step_id = len(steps)
+            
             c.execute("INSERT INTO TabletIssueStep VALUES (NULL,?,?,?,?)",
                 (self.issue_id, self.date_of_step, self.step_desc, self.team_member_guid))
         else:

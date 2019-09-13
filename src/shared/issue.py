@@ -28,6 +28,11 @@ class Issue:
         c.execute("SELECT * FROM TabletIssue WHERE ID = ?", (self.issue_id,))
         existing = c.fetchone()
         if not existing or self.issue_id < 0:
+        
+            c.execute("SELECT * FROM TabletIssue")
+            issues = c.fetchall()
+            self.issue_id = len(issues)
+            
             c.execute("INSERT INTO TabletIssue VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (self.tablet_guid, self.incident_desc, self.problems_desc,
                  self.date_of_incident, self.parts_ordered, self.parts_ordered_date,
