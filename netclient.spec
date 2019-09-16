@@ -3,8 +3,8 @@
 block_cipher = None
 
 
-a = Analysis(['src\\client\\main.py'],
-             pathex=['E:\\OTHER\\tablet-inventory-system-2020\\tablet-inventory-server'],
+a = Analysis(['src\\netclient\\main.py'],
+             pathex=['D:\\OTHER\\tablet-inventory-system-2020\\tablet-inventory-server'],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -23,7 +23,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='main',
+          name='netclient',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
