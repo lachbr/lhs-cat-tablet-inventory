@@ -13,7 +13,8 @@ import sqlite3
 
 g_server_connection = None
 
-SYNC_ACTIVE_DIRECTORY = False
+SYNC_ACTIVE_DIRECTORY = True
+WIPE_DB = False
 
 class Student:
 
@@ -234,7 +235,7 @@ class Server:
         self.listener = core.QueuedConnectionListener(self.mgr, 1)
         self.reader = core.QueuedConnectionReader(self.mgr, 1)
         self.writer = core.ConnectionWriter(self.mgr, 1)
-        self.socket = self.mgr.open_TCP_server_rendezvous('127.0.0.1', 7035, 10)
+        self.socket = self.mgr.open_TCP_server_rendezvous('c2031svcat2', 7035, 10)
         self.listener.add_connection(self.socket)
         
         domain = "cat.pcsb.org"
@@ -255,11 +256,24 @@ class Server:
         self.tablets_being_edited = []
         self.users_being_edited = []
         
+        if WIPE_DB:
+            self.__wipe_db()
+        
         if SYNC_ACTIVE_DIRECTORY:
             self.__sync_tablet_db()
             self.__sync_user_db()
         
         print("Server is now running.")
+        
+    def __wipe_db(self):
+        c = self.db_connection.cursor()
+        c.execute("DELETE FROM Tablet")
+        c.execute("DELETE FROM Student")
+        c.execute("DELETE FROM StudentTabletLink")
+        c.execute("DELETE FROM TabletIssue")
+        c.execute("DELETE FROM TabletIssueStep")
+        self.db_connection.commit()
+        print("Local database wiped")
         
     def __sync_user_db(self):
         """Makes sure our local database contains all of the Active Directory users."""
