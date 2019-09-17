@@ -1,7 +1,14 @@
 from src.shared.base_server_connection import BaseServerConnection
 from src.shared.Consts import *
+from src.shared.issue import Issue
+from src.shared.issue_step import IssueStep
+from src.shared.student import Student
+from src.shared.base_tablet import BaseTablet
+from src.shared.student_tablet_link import StudentTabletLink
+from src.shared import utils
 
 from panda3d import core
+core.load_prc_file_data('', 'notify-level-net spam')
 
 import sys
 from datetime import datetime
@@ -43,8 +50,23 @@ class ServerConnection(BaseServerConnection):
             g_main_window.handle_edit_tablet_resp(dgi)
         elif msg_type == MSG_SERVER_FINISH_EDIT_USER_RESP:
             g_main_window.handle_finish_edit_user_resp(dgi)
+        elif msg_type == MSG_SERVER_GET_ALL_LINKS_RESP:
+            g_main_window.handle_get_all_links_resp(dgi)
+        elif msg_type == MSG_SERVER_GET_ALL_ISSUES_RESP:
+            g_main_window.handle_get_all_issues_resp(dgi)
+        elif msg_type == MSG_SERVER_GET_ALL_ISSUE_STEPS_RESP:
+            g_main_window.handle_get_all_issue_steps_resp(dgi)
+            
         elif msg_type == MSG_SERVER_UPDATE_USER:
             g_main_window.handle_update_user(dgi)
+        elif msg_type == MSG_SERVER_UPDATE_TABLET:
+            g_main_window.handle_update_tablet(dgi)
+        elif msg_type == MSG_SERVER_UPDATE_ISSUE:
+            g_main_window.handle_new_issue(dgi)
+        elif msg_type == MSG_SERVER_UPDATE_ISSUE_STEP:
+            g_main_window.handle_new_issue_step(dgi)
+        elif msg_type == MSG_SERVER_UPDATE_LINK:
+            g_main_window.handle_update_link(dgi)
 
 class ClientWindow(QtWidgets.QMainWindow):
     
@@ -88,8 +110,20 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.please_wait_dialog = None
         self.edit_dialog = None
         
+        self.tablet_table_generated = False
+        self.user_table_generated = False
+        
         self.user_guid_names = {}
         
+        self.students = []
+        self.tablets = []
+        self.student_tablet_links = []
+        self.issues = []
+        self.issue_steps = []
+        
+        self.__request_all_links()
+        self.__request_all_issues()
+        self.__request_all_issue_steps()
         self.__request_all_tablets()
         self.__request_all_users()
     
@@ -192,7 +226,10 @@ class ClientWindow(QtWidgets.QMainWindow):
                 table.showRow(item.row())
         
     def __set_checkbox_state(self, cbox, string):
-        flag = bool(int(string))
+        if isinstance(string, str):
+            flag = bool(int(string))
+        else:
+            flag = string
         if flag:
             cbox.setCheckState(QtCore.Qt.Checked)
         else:
@@ -200,19 +237,32 @@ class ClientWindow(QtWidgets.QMainWindow):
         
     def open_edit_student_dialog(self, row):
         user_view = self.ui.tabletView_2
-        print("Opening student edit for row", row)
+        guid = user_view.item(row, 0).guid
+        users = [user for user in self.students if user.guid == guid]
+        user = users[0] if len(users) > 0 else None
+        if not user:
+            print("Can't find user to edit")
+            return
+            
+        print("Opening student edit for row", row, "guid", guid)
+        
         from src.netclient import net_editstudent
         dlg = QtWidgets.QDialog(self)
         dlgconfig = net_editstudent.Ui_Dialog()
         dlgconfig.setupUi(dlg)
-        self.__set_checkbox_state(dlgconfig.pcsbAgreementCheckBox, user_view.item(row, 6).text())
-        self.__set_checkbox_state(dlgconfig.catAgreementCheckBox, user_view.item(row, 7).text())
-        self.__set_checkbox_state(dlgconfig.insuranceCheckBox, user_view.item(row, 8).text())
-        dlgconfig.insuranceAmountEdit.setText(user_view.item(row, 9).text())
-        
-        tablet_data = user_view.item(row, 5).text()
-        if tablet_data != "No Tablet Assigned": # yuck
-            dlgconfig.tabletPCSBEdit.setText(user_view.item(row, 5).text())
+        self.__set_checkbox_state(dlgconfig.pcsbAgreementCheckBox, user.pcsb_agreement)
+        self.__set_checkbox_state(dlgconfig.catAgreementCheckBox, user.cat_agreement)
+        self.__set_checkbox_state(dlgconfig.insuranceCheckBox, user.insurance_paid)
+        dlgconfig.insuranceAmountEdit.setText(user.insurance_amount)
+
+        links = [link for link in self.student_tablet_links if link.student_guid == guid]
+        link = links[0] if len(links) > 0 else None
+        if link:
+            tablets = [tablet for tablet in self.tablets if tablet.guid == link.tablet_guid]
+            tablet = tablets[0] if len(tablets) > 0 else None
+            if tablet:
+                dlgconfig.tabletPCSBEdit.setText(tablet.pcsb_tag)
+            
             
         dlg.open()
         dlg.finished.connect(self.__handle_edit_student_finish)
@@ -243,6 +293,45 @@ class ClientWindow(QtWidgets.QMainWindow):
         g_server_connection.send(dg)
         
         self.edit_dialog = None
+        
+    def __request_all_links(self):
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_GET_ALL_LINKS)
+        g_server_connection.send(dg)
+        
+    def handle_get_all_links_resp(self, dgi):
+        self.student_tablet_links = []
+        num_links = dgi.get_uint32()
+        for i in range(num_links):
+            link = StudentTabletLink.from_datagram(dgi)
+            self.student_tablet_links.append(link)
+        print("Received %i links" % num_links)
+        
+    def __request_all_issues(self):
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_GET_ALL_ISSUES)
+        g_server_connection.send(dg)
+        
+    def handle_get_all_issues_resp(self, dgi):
+        self.issues = []
+        num_issues = dgi.get_uint32()
+        for i in range(num_issues):
+            issue = Issue.from_datagram(dgi)
+            self.issues.append(issue)
+        print("Received %i issues" % num_issues)
+        
+    def __request_all_issue_steps(self):
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_GET_ALL_ISSUE_STEPS)
+        g_server_connection.send(dg)
+        
+    def handle_get_all_issue_steps_resp(self, dgi):
+        self.issue_steps = []
+        num_steps = dgi.get_uint32()
+        for i in range(num_steps):
+            step = IssueStep.from_datagram(dgi)
+            self.issue_steps.append(step)
+        print("Received %i issue steps" % num_steps)
         
     def __request_all_tablets(self):
         dg = core.Datagram()
@@ -316,62 +405,53 @@ class ClientWindow(QtWidgets.QMainWindow):
             
     def open_edit_tablet_dialog(self, row):
         print("Opening tablet edit dialog for row", row)
-        from src.netclient import net_edittablet
-        dlg = QtWidgets.QDialog(self)
-        dlgcfg = net_edittablet.Ui_EditTabletDialog()
-        dlgcfg.setupUi(dlg)
-        dlgcfg.deviceModelEntry.setText(self.ui.tabletView.item(row, 1).text())
-        dlgcfg.serialNoEntry.setText(self.ui.tabletView.item(row, 2).text())
-        dlg.open()
-        self.edit_dialog = (dlg, dlgcfg)
+        guid = self.ui.tabletView.item(row, 0).guid
         
-    def update_student_row(self, i, dgi, guid = None):
+        from src.netclient.tablet_editing import TabletEditing
+        self.edit_dialog = TabletEditing(self, guid, row)
+        
+    def send_finish_edit_tablet(self, dg):
+        #dg = core.Datagram()
+        #dg.add_uint16(MSG_CLIENT_FINISH_EDIT_TABLET)
+        #dg.add_string(self.editing_guid)
+        g_server_connection.send(dg)
+        #self.show_please_wait()
+        
+        #self.editing_guid = None
+        
+    def update_student_row_ui(self, i, student):
         userView = self.ui.tabletView_2
         
-        if not guid:
-            guid = dgi.get_string()
-        name = dgi.get_string()
+        guid = student.guid
+        name = student.name
         firstLast = name.split(" ", 1)
         firstName = firstLast[0]
         lastName = firstLast[1]
-        grade = dgi.get_string()
-        email = dgi.get_string()
-        pcsb_agreement = dgi.get_uint8()
-        cat_agreement = dgi.get_uint8()
-        insurance_paid = dgi.get_uint8()
-        insurance_amount = dgi.get_string()
-        cat_student = dgi.get_uint8()
-        tablet_pcsb_tag = dgi.get_string()
-        
-        self.user_guid_names[guid] = name
+        grade = student.grade
+        email = student.email
+        pcsb_agreement = student.pcsb_agreement
+        cat_agreement = student.cat_agreement
+        insurance_paid = student.insurance_paid
+        insurance_amount = student.insurance_amount
+        cat_student = student.cat_student
+        pcsb_tags = [tablet.pcsb_tag for tablet in self.tablets if tablet.guid == student.tablet_guid]
+        if len(pcsb_tags) > 0:
+            tablet_pcsb_tag = pcsb_tags[0]
+        else:
+            tablet_pcsb_tag = "No Tablet Assigned"
         
         userView.setItem(i, 0, ADTableWidgetItem(guid, firstName))
         userView.setItem(i, 1, ADTableWidgetItem(guid, lastName))
         userView.setItem(i, 2, ADTableWidgetItem(guid, email))
         userView.setItem(i, 3, ADTableWidgetItem(guid, grade))
-        userView.setItem(i, 4, ADTableWidgetItem(guid, str(cat_student)))
+        userView.setItem(i, 4, ADTableWidgetItem(guid, utils.bool_yes_no(cat_student)))
         userView.setItem(i, 5, ADTableWidgetItem(guid, tablet_pcsb_tag))
-        userView.setItem(i, 6, ADTableWidgetItem(guid, str(pcsb_agreement)))
-        userView.setItem(i, 7, ADTableWidgetItem(guid, str(cat_agreement)))
-        userView.setItem(i, 8, ADTableWidgetItem(guid, str(insurance_paid)))
+        userView.setItem(i, 6, ADTableWidgetItem(guid, utils.bool_yes_no(pcsb_agreement)))
+        userView.setItem(i, 7, ADTableWidgetItem(guid, utils.bool_yes_no(cat_agreement)))
+        userView.setItem(i, 8, ADTableWidgetItem(guid, utils.bool_yes_no(insurance_paid)))
         userView.setItem(i, 9, ADTableWidgetItem(guid, insurance_amount))
         
-    def handle_update_user(self, dgi):
-        guid = dgi.get_string()
-        userView = self.ui.tabletView_2
-        row = None
-        # Find the row containing this user GUID
-        for i in range(userView.rowCount()):
-            if userView.item(i, 0).guid == guid:
-                row = i
-                break
-        if row is None:
-            print("Error: tried to update user row but couldn't find the row")
-            return
-           
-        self.update_student_row(row, dgi, guid)
-        
-    def handle_get_all_users_resp(self, dgi):
+    def generate_student_table_ui(self):
         userView = self.ui.tabletView_2
         
         self.user_guid_names = {}
@@ -381,56 +461,168 @@ class ClientWindow(QtWidgets.QMainWindow):
         userView.setRowCount(0)
         userView.setSortingEnabled(False)
         
-        num_users = dgi.get_uint16()
-        for i in range(num_users):
+        for i in range(len(self.students)):
+            student = self.students[i]
             userView.insertRow(i)
-            self.update_student_row(i, dgi)
             
+            self.update_student_row_ui(i, student)
+        
         userView.setSortingEnabled(True)
         
         self.filter_user_table()
         
-    def handle_get_all_tablets_resp(self, dgi):
+        self.user_table_generated = True
+        
+        print("User table generated")
+        
+    def update_student_row(self, i, dgi, student = None):
+        if not student:
+            student = Student.from_datagram(dgi)
+
+        self.user_guid_names[student.guid] = student.name
+
+        utils.list_add_replace(self.students, student)
+            
+    def find_table_guid_row(self, table, guid):
+        row = None
+        for i in range(table.rowCount()):
+            if table.item(i, 0).guid == guid:
+                row = i
+                break
+        return row
+        
+    def handle_update_user(self, dgi):
+        student = Student.from_datagram(dgi)
+        userView = self.ui.tabletView_2
+        row = self.find_table_guid_row(userView, student.guid)
+        if row is None:
+            print("Error: tried to update user row but couldn't find the row")
+            return
+            
+        self.update_student_row(row, dgi, student)
+        if self.user_table_generated:
+            self.update_student_row_ui(row, student)
+            
+    def handle_new_issue(self, dgi):
+        num_issues = dgi.get_uint16()
+        for i in range(num_issues):
+            issue = Issue.from_datagram(dgi)
+            utils.list_add_replace(self.issues, issue)
+            
+            tablets = [tablet for tablet in self.tablets if tablet.guid == issue.tablet_guid]
+            tablet = tablets[0] if len(tablets) > 0 else None
+            if tablet and self.tablet_table_generated:
+                self.update_tablet_row_ui(self.find_table_guid_row(self.ui.tabletView, tablet.guid), tablet)
+                
+    def handle_new_issue_step(self, dgi):
+        num_steps = dgi.get_uint16()
+        for i in range(num_steps):
+            step = IssueStep.from_datagram(dgi)
+            utils.list_add_replace(self.issue_steps, step)
+                
+    def handle_update_link(self, dgi):
+        num_links = dgi.get_uint16()
+        for i in range(num_links):
+            link = StudentTabletLink.from_datagram(dgi)
+            utils.list_add_replace(self.student_tablet_links, link)
+            
+            tablets = [tablet for tablet in self.tablets if tablet.guid == link.tablet_guid]
+            tablet = tablets[0] if len(tablets) > 0 else None
+            users = [user for user in self.students if user.guid == link.student_guid]
+            user = users[0] if len(users) > 0 else None
+            if tablet and self.tablet_table_generated:
+                self.update_tablet_row_ui(self.find_table_guid_row(self.ui.tabletView, tablet.guid), tablet)
+            if user and self.user_table_generated:
+                self.update_student_row_ui(self.find_table_guid_row(self.ui.tabletView_2, user.guid), user)
+                
+    def handle_update_tablet(self, dgi):
+        tablet = BaseTablet.from_datagram(dgi)
+        utils.list_add_replace(self.tablets, tablet)
+            
+        if self.tablet_table_generated:
+            row = self.find_table_guid_row(self.ui.tabletView, tablet.guid)
+            if row is not None:
+                self.update_tablet_row_ui(row, tablet)
+        
+    def handle_get_all_users_resp(self, dgi):
+        self.students = []
+
+        num_users = dgi.get_uint16()
+        for i in range(num_users):
+            self.update_student_row(i, dgi)
+            
+        print("Received %i users" % num_users)
+            
+        if not self.user_table_generated:
+            self.generate_student_table_ui()
+        if not self.tablet_table_generated:
+            self.generate_tablet_table_ui()
+            
+    def update_tablet_row_ui(self, i, tablet):
+        guid = tablet.guid
+        pcsb = tablet.pcsb_tag
+        device = tablet.device_model
+        serial = tablet.serial
+        
+        link = None
+        student = None
+        
+        links = [link for link in self.student_tablet_links if link.tablet_guid == tablet.guid]
+        if len(links) > 0:
+            link = links[0]
+        if link:
+            students = [student for student in self.students if student.guid == link.student_guid]
+            if len(students) > 0:
+                student = students[0]
+        if student:
+            name = student.name
+        else:
+            name = "Unassigned"
+        issues = [issue for issue in self.issues if issue.tablet_guid == tablet.guid]
+        active_issue = False
+        for issue in issues:
+            if not issue.resolved:
+                active_issue = True
+                break
+        if active_issue:
+            issue = "Active Issue"
+        else:
+            issue = "No Active Issue"
+        
+        self.ui.tabletView.setItem(i, 0, ADTableWidgetItem(guid, pcsb))
+        self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
+        self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
+        self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
+        self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
+            
+    def generate_tablet_table_ui(self):
         # Clear existing rows
         self.ui.tabletView.clearContents()
         self.ui.tabletView.setRowCount(0)
         self.ui.tabletView.setSortingEnabled(False)
         
-        num_assigned_tablets = dgi.get_uint16()
-        for i in range(num_assigned_tablets):
-            guid = dgi.get_string()
-            pcsb = dgi.get_string()
-            device = dgi.get_string()
-            serial = dgi.get_string()
-            issue = "No Issue"#dgi.get_string()
-            name = dgi.get_string()
-            
+        for i in range(len(self.tablets)):
+            tablet = self.tablets[i]
             self.ui.tabletView.insertRow(i)
-            self.ui.tabletView.setItem(i, 0, ADTableWidgetItem(guid, pcsb))
-            self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
-            self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
-            self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
-            self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
-            
-        num_unassigned_tablets = dgi.get_uint16()
-        for i in range(num_unassigned_tablets):
-            guid = dgi.get_string()
-            pcsb = dgi.get_string()
-            device = dgi.get_string()
-            serial = dgi.get_string()
-            issue = "No Issue"
-            name = "Unassigned"
-            
-            self.ui.tabletView.insertRow(i)
-            self.ui.tabletView.setItem(i, 0, ADTableWidgetItem(guid, pcsb))
-            self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
-            self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
-            self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
-            self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
+            self.update_tablet_row_ui(i, tablet)
             
         self.ui.tabletView.setSortingEnabled(True)
         
         self.filter_tablet_table()
+        
+        self.tablet_table_generated = True
+        
+        print("Tablet table generated")
+        
+    def handle_get_all_tablets_resp(self, dgi):
+        self.tablets = []      
+        
+        num_tablets = dgi.get_uint16()
+        for i in range(num_tablets):
+            tablet = BaseTablet.from_datagram(dgi)
+            self.tablets.append(tablet)
+            
+        print("Received %i tablets" % num_tablets)
         
     def __get_block(self, now):
         now_time = now.time()
@@ -475,7 +667,7 @@ class NetClientApp(QtWidgets.QApplication):
         global g_server_connection
         global g_main_window
         
-        self.server_connection = ServerConnection('127.0.0.1', 7035)
+        self.server_connection = ServerConnection('c2031svcat2', 7035)
         # Timer which ticks the connection to the server
         self.server_timer = QtCore.QTimer()
         self.server_timer.timeout.connect(self.server_connection.run)
