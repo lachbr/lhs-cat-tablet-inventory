@@ -2,10 +2,9 @@
 
 # Form implementation generated from reading ui file 'net_mainwindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.0
+# Created by: PyQt5 UI code generator 5.12.2
 #
 # WARNING! All changes made in this file will be lost!
-
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -13,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1078, 798)
+        MainWindow.resize(1124, 798)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -63,6 +62,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.tabletView = QtWidgets.QTableWidget(self.groupBox_2)
         self.tabletView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tabletView.setAlternatingRowColors(True)
         self.tabletView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.tabletView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tabletView.setRowCount(0)
@@ -81,6 +81,14 @@ class Ui_MainWindow(object):
         self.tabletView.horizontalHeader().setCascadingSectionResizes(False)
         self.tabletView.horizontalHeader().setStretchLastSection(True)
         self.verticalLayout_3.addWidget(self.tabletView)
+        self.tabletExportExcel = QtWidgets.QPushButton(self.groupBox_2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.tabletExportExcel.sizePolicy().hasHeightForWidth())
+        self.tabletExportExcel.setSizePolicy(sizePolicy)
+        self.tabletExportExcel.setObjectName("tabletExportExcel")
+        self.verticalLayout_3.addWidget(self.tabletExportExcel)
         self.verticalLayout.addWidget(self.groupBox_2)
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtWidgets.QWidget()
@@ -126,10 +134,11 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.tabletView_2 = QtWidgets.QTableWidget(self.groupBox_4)
         self.tabletView_2.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tabletView_2.setAlternatingRowColors(True)
         self.tabletView_2.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.tabletView_2.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tabletView_2.setRowCount(0)
-        self.tabletView_2.setColumnCount(10)
+        self.tabletView_2.setColumnCount(11)
         self.tabletView_2.setObjectName("tabletView_2")
         item = QtWidgets.QTableWidgetItem()
         self.tabletView_2.setHorizontalHeaderItem(0, item)
@@ -151,8 +160,18 @@ class Ui_MainWindow(object):
         self.tabletView_2.setHorizontalHeaderItem(8, item)
         item = QtWidgets.QTableWidgetItem()
         self.tabletView_2.setHorizontalHeaderItem(9, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.tabletView_2.setHorizontalHeaderItem(10, item)
         self.tabletView_2.horizontalHeader().setStretchLastSection(True)
         self.verticalLayout_4.addWidget(self.tabletView_2)
+        self.userExportExcel = QtWidgets.QPushButton(self.groupBox_4)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.userExportExcel.sizePolicy().hasHeightForWidth())
+        self.userExportExcel.setSizePolicy(sizePolicy)
+        self.userExportExcel.setObjectName("userExportExcel")
+        self.verticalLayout_4.addWidget(self.userExportExcel)
         self.verticalLayout_6.addWidget(self.groupBox_4)
         self.tabWidget.addTab(self.tab_2, "")
         self.gridLayout.addWidget(self.tabWidget, 9, 0, 1, 1)
@@ -188,7 +207,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -212,6 +231,7 @@ class Ui_MainWindow(object):
         item.setText(_translate("MainWindow", "Active Issue"))
         item = self.tabletView.horizontalHeaderItem(4)
         item.setText(_translate("MainWindow", "Assignee"))
+        self.tabletExportExcel.setText(_translate("MainWindow", "Export to Excel Sheet"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Tablet Inventory"))
         self.groupBox_5.setTitle(_translate("MainWindow", "Search"))
         self.groupBox_6.setTitle(_translate("MainWindow", "Search By"))
@@ -241,6 +261,11 @@ class Ui_MainWindow(object):
         item.setText(_translate("MainWindow", "Insurance Paid"))
         item = self.tabletView_2.horizontalHeaderItem(9)
         item.setText(_translate("MainWindow", "Insurance Amount"))
+        item = self.tabletView_2.horizontalHeaderItem(10)
+        item.setText(_translate("MainWindow", "Date of Insurance"))
+        self.userExportExcel.setText(_translate("MainWindow", "Export to Excel Sheet"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Students/Faculty"))
         self.timeLabel.setText(_translate("MainWindow", "Time: 8:46 AM"))
         self.blockLabel.setText(_translate("MainWindow", "Block: 1"))
+
+

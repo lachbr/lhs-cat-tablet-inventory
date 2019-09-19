@@ -13,6 +13,7 @@ import sqlite3
 
 g_server_connection = None
 
+EXCEL_IMPORT = False
 SYNC_ACTIVE_DIRECTORY = True
 WIPE_DB = False
 
@@ -49,7 +50,7 @@ class Student:
         
         return Student(
             ad_student, db_student[1], db_student[2],
-            db_student[3], db_student[4], tablet_guid
+            db_student[3], db_student[4], db_student[5], tablet_guid
         )
         
     @staticmethod
@@ -60,7 +61,15 @@ class Student:
             ad_student = None
         return Student.from_active_directory_student(ad_student)
         
-    def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", tablet_guid = None):
+    @staticmethod
+    def from_name(name_str):
+        try:
+            ad_student = pyad.from_cn(name_str)
+        except:
+            ad_student = None
+        return Student.from_active_directory_student(ad_student)
+        
+    def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", insurance_date = "", tablet_guid = None):
         self.ad_student = ad_student
         self.name = ad_student.displayName
         self.grade = ad_student.description
@@ -70,6 +79,7 @@ class Student:
         self.cat_agreement = cat_agreement
         self.insurance_paid = insurance_paid
         self.insurance_amount = insurance_amount
+        self.date_of_insurance = insurance_date
         
         group_name = ad_student.parent_container.prefixed_cn
         self.cat_student = group_name in [Student.NET_GROUP, Student.CAT_GROUP]
@@ -87,6 +97,7 @@ class Student:
         dg.add_uint8(self.cat_agreement)
         dg.add_uint8(self.insurance_paid)
         dg.add_string(self.insurance_amount)
+        dg.add_string(self.date_of_insurance)
         dg.add_uint8(self.cat_student)
         if self.tablet_guid:
             dg.add_string(self.tablet_guid)
@@ -96,8 +107,8 @@ class Student:
         
     def update(self):
         c = g_server_connection.db_connection.cursor()
-        c.execute("UPDATE Student SET InternetAgreementPCSB = ?, InternetAgreementCAT = ?, InsurancePaid = ?, InsuranceAmount = ? WHERE GUID = ?",
-                 (int(self.pcsb_agreement), int(self.cat_agreement), int(self.insurance_paid), self.insurance_amount, self.guid))
+        c.execute("UPDATE Student SET InternetAgreementPCSB = ?, InternetAgreementCAT = ?, InsurancePaid = ?, InsuranceAmount = ?, InsuranceDate = ? WHERE GUID = ?",
+                 (int(self.pcsb_agreement), int(self.cat_agreement), int(self.insurance_paid), self.insurance_amount, self.date_of_insurance, self.guid))
         g_server_connection.db_connection.commit()
                  
     def update_link(self):
@@ -262,8 +273,56 @@ class Server:
         if SYNC_ACTIVE_DIRECTORY:
             self.__sync_tablet_db()
             self.__sync_user_db()
+            
+        if EXCEL_IMPORT:
+            self.__import_excel()
         
         print("Server is now running.")
+        
+    def __import_excel(self):
+        not_found = []
+        
+        import xlrd
+        wb = xlrd.open_workbook('excel_db.xls')
+        sheet = wb.sheets()[0]
+        for row in range(sheet.nrows):
+            if row == 0:
+                continue
+            
+            first_name = sheet.cell(row, 0).value
+            last_name = sheet.cell(row, 1).value
+            tablet_pcsb = sheet.cell(row, 3).value.replace("-", "")
+            tablet_serial = sheet.cell(row, 4).value
+            tablet_device = "%i" % sheet.cell(row, 5).value
+            
+            student = Student.from_name(first_name + " " + last_name)
+            if len(first_name) > 0 and not student:
+                # Name couldn't be found
+                print("Student", first_name + " " + last_name, "not found in Active Directory!")
+                not_found.append(first_name + " " + last_name)
+            
+            tablet = Tablet.from_pcsb_tag(tablet_pcsb)
+            if tablet:
+                print("Tablet from excel sheet:", tablet_device, tablet_serial)
+                tablet.device_model = tablet_device
+                tablet.serial = tablet_serial
+                tablet.update()
+                
+                if student:
+                    print("\tStudent on tablet:", student.name)
+                    student.tablet_guid = tablet.guid
+                    student.update_link()
+                else:
+                    print("\tNo student on tablet")
+                    
+            if student:
+                student.update()
+                
+        self.db_connection.commit()
+        
+        print("Students not found in active directory:")
+        for name in not_found:
+            print("\t" + name)
         
     def __wipe_db(self):
         c = self.db_connection.cursor()
@@ -286,7 +345,7 @@ class Server:
             student = c.fetchone()
             if not student:
                 # Doesn't exist, make a default entry.
-                c.execute("INSERT INTO Student VALUES (?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00"))
+                c.execute("INSERT INTO Student VALUES (?,?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00", ""))
                 print("Added new student", ad_student.cn)
                 
         # Now search for students in our local database that no longer exist in Active Directory.
@@ -353,7 +412,7 @@ class Server:
         all_students = Student.get_ad_cat_student_list()
         for ad_student in all_students:
             print (ad_student)
-            c.execute("INSERT INTO Student VALUES (?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00"))
+            c.execute("INSERT INTO Student VALUES (?,?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00", ""))
         self.db_connection.commit()
         
     def __build_tablet_db_from_ad(self):
@@ -714,10 +773,21 @@ class Server:
                     error = False
                     
                     student = Student.from_guid(guid)
+                    
+                    has_new_insurance = False
+                    if insurance and not student.insurance_paid:
+                        has_new_insurance = True
+                        insurance_date = dgi.get_string()
+                        print("New insurance date", insurance_date)
+                    
                     student.pcsb_agreement = pcsb_agreement
                     student.cat_agreement = cat_agreement
                     student.insurance_paid = insurance
                     student.insurance_amount = insurance_amt
+                    if not insurance:
+                        student.date_of_insurance = ""
+                    elif has_new_insurance:
+                        student.date_of_insurance = insurance_date
                     if len(tablet_pcsb) > 0:
                         tablet = Tablet.from_pcsb_tag(tablet_pcsb)
                         if not tablet:

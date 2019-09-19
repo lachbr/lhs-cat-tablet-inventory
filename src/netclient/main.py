@@ -11,6 +11,7 @@ from panda3d import core
 core.load_prc_file_data('', 'notify-level-net spam')
 
 import sys
+import os
 from datetime import datetime
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -84,6 +85,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.ui.userView = self.ui.tabletView_2
         self.ui.userView.itemDoubleClicked.connect(self.__handle_double_click_user_item)
         
+        self.ui.userExportExcel.pressed.connect(self.__export_users_to_excel)
+        
         self.ui.tabletView.itemDoubleClicked.connect(self.__handle_double_click_tablet_item)
         
         self.ui.radio_user_name.toggled.connect(self.__toggle_radio_user_name)
@@ -126,6 +129,60 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.__request_all_issue_steps()
         self.__request_all_tablets()
         self.__request_all_users()
+        
+    def __export_users_to_excel(self):
+        filedlg = QtWidgets.QFileDialog(self, "Select export location", os.environ["USERPROFILE"] + "\\Desktop", "Excel File (*.xls)")
+        filedlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+        if (filedlg.exec()):
+            export_path = filedlg.selectedFiles()[0]
+            print("Exporting user excel sheet to", export_path)
+            import xlwt
+            wb = xlwt.Workbook()
+            sheet = wb.add_sheet('Sheet 1')
+            
+            sheet.write(0, 0, 'First Name')
+            sheet.write(0, 1, 'Last Name')
+            sheet.write(0, 2, 'Grade')
+            sheet.write(0, 3, 'Tablet PCSB Tag')
+            sheet.write(0, 4, 'Tablet Serial Number')
+            sheet.write(0, 5, 'Tablet Device Model')
+            sheet.write(0, 6, 'PCSB Internet Agreement')
+            sheet.write(0, 7, 'CAT Internet Agreement')
+            sheet.write(0, 8, 'Insurance Paid')
+            sheet.write(0, 9, 'Insurance Amount')
+            sheet.write(0, 10, 'Insurance Date')
+            
+            for i in range(len(self.students)):
+                student = self.students[i]
+                links = [link for link in self.student_tablet_links if link.student_guid == student.guid]
+                link = links[0] if len(links) > 0 else None
+                tablet_pcsb = ""
+                tablet_serial = ""
+                tablet_device = ""
+                tablet = None
+                if link:
+                    tablets = [t for t in self.tablets if t.guid == link.tablet_guid]
+                    tablet = tablets[0] if len(tablets) > 0 else None
+                if tablet:
+                    tablet_pcsb = tablet.pcsb_tag
+                    tablet_serial = tablet.serial
+                    tablet_device = tablet.device_model
+                firstLast = student.name.split(" ", 1)
+                firstName = firstLast[0]
+                lastName = firstLast[1]
+                row = i + 1
+                sheet.write(row, 0, firstName)
+                sheet.write(row, 1, lastName)
+                sheet.write(row, 2, student.grade)
+                sheet.write(row, 3, tablet_pcsb)
+                sheet.write(row, 4, tablet_serial)
+                sheet.write(row, 5, tablet_device)
+                sheet.write(row, 6, utils.bool_yes_no(student.pcsb_agreement))
+                sheet.write(row, 7, utils.bool_yes_no(student.cat_agreement))
+                sheet.write(row, 8, utils.bool_yes_no(student.insurance_paid))
+                sheet.write(row, 9, student.insurance_amount)
+                sheet.write(row, 10, student.date_of_insurance)
+            wb.save(export_path)
     
     def __handle_tablet_search_edited(self, text):
         self.filter_tablet_table()
@@ -284,11 +341,17 @@ class ClientWindow(QtWidgets.QMainWindow):
         dg.add_uint8(ret)
         if ret:
             dlgcfg = self.edit_dialog[1]
+            has_insurance = dlgcfg.insuranceCheckBox.checkState() != 0
+            students = [student for student in self.students if student.guid == self.editing_guid]
+            student = students[0] if len(students) > 0 else None
             dg.add_uint8(dlgcfg.pcsbAgreementCheckBox.checkState() != 0)
             dg.add_uint8(dlgcfg.catAgreementCheckBox.checkState() != 0)
-            dg.add_uint8(dlgcfg.insuranceCheckBox.checkState() != 0)
+            dg.add_uint8(has_insurance)
             dg.add_string(dlgcfg.insuranceAmountEdit.text())
             dg.add_string(dlgcfg.tabletPCSBEdit.text())
+            if has_insurance and (student and not student.insurance_paid):
+                print("Student now has insurance")
+                dg.add_string(utils.get_date_string())
             self.show_please_wait()
         g_server_connection.send(dg)
         
@@ -450,6 +513,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         userView.setItem(i, 7, ADTableWidgetItem(guid, utils.bool_yes_no(cat_agreement)))
         userView.setItem(i, 8, ADTableWidgetItem(guid, utils.bool_yes_no(insurance_paid)))
         userView.setItem(i, 9, ADTableWidgetItem(guid, insurance_amount))
+        userView.setItem(i, 10, ADTableWidgetItem(guid, student.date_of_insurance))
         
     def generate_student_table_ui(self):
         userView = self.ui.tabletView_2
@@ -667,7 +731,7 @@ class NetClientApp(QtWidgets.QApplication):
         global g_server_connection
         global g_main_window
         
-        self.server_connection = ServerConnection('c2031svcat2', 7035)
+        self.server_connection = ServerConnection('127.0.0.1', 7035)
         # Timer which ticks the connection to the server
         self.server_timer = QtCore.QTimer()
         self.server_timer.timeout.connect(self.server_connection.run)
