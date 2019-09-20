@@ -28,6 +28,7 @@ U_SEARCHMODE_NAME           = 0
 U_SEARCHMODE_TABLET_PCSB    = 1
 U_SEARCHMODE_EMAIL          = 2
 U_SEARCHMODE_GRADE          = 3
+U_SEARCHMODE_LNAME          = 4
 
 class ADTableWidgetItem(QtWidgets.QTableWidgetItem):
 
@@ -93,6 +94,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.ui.radio_user_email.toggled.connect(self.__toggle_radio_user_email)
         self.ui.radio_user_grade.toggled.connect(self.__toggle_radio_user_grade)
         self.ui.radio_user_tablet_pcsb.toggled.connect(self.__toggle_radio_user_tablet_pcsb)
+        self.ui.radio_user_lname.toggled.connect(self.__toggle_radio_user_lname)
         self.ui.facultySearchEntry.textChanged.connect(self.__handle_user_search_edited)
         
         self.ui.radio_tablet_pcsb.toggled.connect(self.__toggle_radio_tablet_pcsb)
@@ -196,6 +198,11 @@ class ClientWindow(QtWidgets.QMainWindow):
         if flag:
             self.user_search_mode = U_SEARCHMODE_NAME
             self.filter_user_table()
+            
+    def __toggle_radio_user_lname(self, flag):
+        if flag:
+            self.user_search_mode = U_SEARCHMODE_LNAME
+            self.filter_user_table()
     
     def __toggle_radio_user_email(self, flag):
         if flag:
@@ -251,6 +258,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         mode = self.user_search_mode
         if mode == U_SEARCHMODE_NAME:
             return 0
+        elif mode == U_SEARCHMODE_LNAME:
+            return 1
         elif mode == U_SEARCHMODE_EMAIL:
             return 2
         elif mode == U_SEARCHMODE_GRADE:
@@ -503,6 +512,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         else:
             tablet_pcsb_tag = "No Tablet Assigned"
         
+        userView.setSortingEnabled(False)
         userView.setItem(i, 0, ADTableWidgetItem(guid, firstName))
         userView.setItem(i, 1, ADTableWidgetItem(guid, lastName))
         userView.setItem(i, 2, ADTableWidgetItem(guid, email))
@@ -514,6 +524,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         userView.setItem(i, 8, ADTableWidgetItem(guid, utils.bool_yes_no(insurance_paid)))
         userView.setItem(i, 9, ADTableWidgetItem(guid, insurance_amount))
         userView.setItem(i, 10, ADTableWidgetItem(guid, student.date_of_insurance))
+        userView.setSortingEnabled(True)
         
     def generate_student_table_ui(self):
         userView = self.ui.tabletView_2
@@ -527,6 +538,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         
         for i in range(len(self.students)):
             student = self.students[i]
+            userView.setSortingEnabled(False)
             userView.insertRow(i)
             
             self.update_student_row_ui(i, student)
@@ -653,11 +665,13 @@ class ClientWindow(QtWidgets.QMainWindow):
         else:
             issue = "No Active Issue"
         
+        self.ui.tabletView.setSortingEnabled(False)
         self.ui.tabletView.setItem(i, 0, ADTableWidgetItem(guid, pcsb))
         self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
         self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
         self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
         self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
+        self.ui.tabletView.setSortingEnabled(True)
             
     def generate_tablet_table_ui(self):
         # Clear existing rows
@@ -667,6 +681,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         
         for i in range(len(self.tablets)):
             tablet = self.tablets[i]
+            self.ui.tabletView.setSortingEnabled(False)
             self.ui.tabletView.insertRow(i)
             self.update_tablet_row_ui(i, tablet)
             

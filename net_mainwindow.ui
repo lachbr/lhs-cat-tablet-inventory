@@ -190,34 +190,41 @@
               <string>Search By</string>
              </property>
              <layout class="QGridLayout" name="gridLayout_4">
-              <item row="0" column="0">
+              <item row="1" column="0">
                <widget class="QRadioButton" name="radio_user_name">
                 <property name="text">
-                 <string>Name</string>
+                 <string>First Name</string>
                 </property>
                 <property name="checked">
                  <bool>true</bool>
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QRadioButton" name="radio_user_tablet_pcsb">
+              <item row="5" column="1">
+               <widget class="QRadioButton" name="radio_user_grade">
                 <property name="text">
-                 <string>Tablet PCSB Tag</string>
+                 <string>Grade</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
+              <item row="1" column="1">
                <widget class="QRadioButton" name="radio_user_email">
                 <property name="text">
                  <string>E-Mail Address</string>
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
-               <widget class="QRadioButton" name="radio_user_grade">
+              <item row="5" column="0">
+               <widget class="QRadioButton" name="radio_user_lname">
                 <property name="text">
-                 <string>Grade</string>
+                 <string>Last Name</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QRadioButton" name="radio_user_tablet_pcsb">
+                <property name="text">
+                 <string>Tablet PCSB Tag</string>
                 </property>
                </widget>
               </item>
