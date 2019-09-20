@@ -281,6 +281,7 @@ class Server:
         
     def __import_excel(self):
         not_found = []
+        tablets_not_found = []
         
         import xlrd
         wb = xlrd.open_workbook('excel_db.xls')
@@ -314,15 +315,24 @@ class Server:
                     student.update_link()
                 else:
                     print("\tNo student on tablet")
+            elif len(tablet_pcsb) > 0:
+                print("Can't find tablet", tablet_pcsb)
+                tablets_not_found.append(tablet_pcsb)
                     
             if student:
                 student.update()
                 
         self.db_connection.commit()
         
-        print("Students not found in active directory:")
+        import_errors_out = open('excel_import_errors.txt', 'w')
+        import_errors_out.write("Students not found in active directory:\n")
         for name in not_found:
-            print("\t" + name)
+            import_errors_out.write("\t" + name + "\n")
+        import_errors_out.write("Tablets not found in active directory:\n")
+        for t in tablets_not_found:
+            import_errors_out.write("\t" + t + "\n")
+        import_errors_out.flush()
+        import_errors_out.close()
         
     def __wipe_db(self):
         c = self.db_connection.cursor()
