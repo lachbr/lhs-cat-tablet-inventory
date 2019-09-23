@@ -26,7 +26,9 @@ class Student:
     def get_ad_cat_student_list():
         cat_students = pyad.from_dn("ou=+AllCATStudents,dc=cat,dc=pcsb,dc=org").get_children()
         net_assistants = pyad.from_dn("ou=+NetworkAssistants,dc=cat,dc=pcsb,dc=org").get_children()
-        return cat_students + net_assistants
+        pcsb_students = pyad.from_dn("ou=+LHSO365Students,dc=cat,dc=pcsb,dc=org").get_children()
+        cat_faculty = pyad.from_dn("ou=+AllFaculty,dc=cat,dc=pcsb,dc=org").get_children()
+        return cat_students + net_assistants + pcsb_students + cat_faculty
     
     @staticmethod
     def from_active_directory_student(ad_student):
