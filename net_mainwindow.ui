@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1078</width>
+    <width>1124</width>
     <height>798</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <item row="9" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -104,6 +104,9 @@
              <property name="editTriggers">
               <set>QAbstractItemView::NoEditTriggers</set>
              </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
              <property name="selectionMode">
               <enum>QAbstractItemView::SingleSelection</enum>
              </property>
@@ -152,6 +155,19 @@
              </column>
             </widget>
            </item>
+           <item>
+            <widget class="QPushButton" name="tabletExportExcel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Export to Excel Sheet</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -174,34 +190,41 @@
               <string>Search By</string>
              </property>
              <layout class="QGridLayout" name="gridLayout_4">
-              <item row="0" column="0">
+              <item row="1" column="0">
                <widget class="QRadioButton" name="radio_user_name">
                 <property name="text">
-                 <string>Name</string>
+                 <string>First Name</string>
                 </property>
                 <property name="checked">
                  <bool>true</bool>
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QRadioButton" name="radio_user_tablet_pcsb">
+              <item row="5" column="1">
+               <widget class="QRadioButton" name="radio_user_grade">
                 <property name="text">
-                 <string>Tablet PCSB Tag</string>
+                 <string>Grade</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
+              <item row="1" column="1">
                <widget class="QRadioButton" name="radio_user_email">
                 <property name="text">
                  <string>E-Mail Address</string>
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
-               <widget class="QRadioButton" name="radio_user_grade">
+              <item row="5" column="0">
+               <widget class="QRadioButton" name="radio_user_lname">
                 <property name="text">
-                 <string>Grade</string>
+                 <string>Last Name</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QRadioButton" name="radio_user_tablet_pcsb">
+                <property name="text">
+                 <string>Tablet PCSB Tag</string>
                 </property>
                </widget>
               </item>
@@ -241,6 +264,9 @@
              <property name="editTriggers">
               <set>QAbstractItemView::NoEditTriggers</set>
              </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
              <property name="selectionMode">
               <enum>QAbstractItemView::SingleSelection</enum>
              </property>
@@ -254,7 +280,7 @@
               <number>0</number>
              </property>
              <property name="columnCount">
-              <number>10</number>
+              <number>11</number>
              </property>
              <attribute name="horizontalHeaderStretchLastSection">
               <bool>true</bool>
@@ -309,6 +335,24 @@
                <string>Insurance Amount</string>
               </property>
              </column>
+             <column>
+              <property name="text">
+               <string>Date of Insurance</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="userExportExcel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Export to Excel Sheet</string>
+             </property>
             </widget>
            </item>
           </layout>

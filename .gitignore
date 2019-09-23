@@ -3,3 +3,4 @@ built_netclient
 build
 *.pyc
 __pycache__
+*.exe

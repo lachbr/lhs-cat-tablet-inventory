@@ -4,3 +4,8 @@ pip install panda3d==1.10.3
 pip install pyqt5
 pip install pywin32
 pip install pyad
+pip install xlwt
+pip install xlrd
+pip install pyinstaller
+
+nsis

@@ -1,0 +1,4 @@
+ftp://c2031snas2/TabletInventory2020/tablet_inventory_installer.exe
+
+Username: tablet_inventory
+Password: The Force is Strong
