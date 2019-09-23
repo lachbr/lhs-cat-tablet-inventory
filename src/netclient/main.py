@@ -497,8 +497,15 @@ class ClientWindow(QtWidgets.QMainWindow):
         guid = student.guid
         name = student.name
         firstLast = name.split(" ", 1)
-        firstName = firstLast[0]
-        lastName = firstLast[1]
+        if len(firstLast) == 2:
+            firstName = firstLast[0]
+            lastName = firstLast[1]
+        elif len(firstLast) == 1:
+            firstName = firstLast[0]
+            lastName = ""
+        else:
+            firstName = ""
+            lastName = ""
         grade = student.grade
         email = student.email
         pcsb_agreement = student.pcsb_agreement
