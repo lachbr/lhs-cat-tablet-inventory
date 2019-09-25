@@ -73,7 +73,12 @@ class Student:
         
     def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", insurance_date = "", tablet_guid = None):
         self.ad_student = ad_student
-        self.name = ad_student.displayName
+        self.first_name = ad_student.givenName
+        if not self.first_name:
+            self.first_name = ""
+        self.last_name = ad_student.sn
+        if not self.last_name:
+            self.last_name = ""
         self.grade = ad_student.description
         self.email = ad_student.userPrincipalName
         self.guid = ad_student.guid_str
@@ -92,7 +97,8 @@ class Student:
         
     def write_datagram(self, dg):
         dg.add_string(self.guid)
-        dg.add_string(self.name)
+        dg.add_string(self.first_name)
+        dg.add_string(self.last_name)
         dg.add_string(str(self.grade))
         dg.add_string(self.email)
         dg.add_uint8(self.pcsb_agreement)
@@ -128,7 +134,7 @@ class Student:
     def __str__(self):
         return ("GUID: %s\n\tName: %s\n\tGrade: %s\n\tPCSB Agreement: %s\n"
             "\tCAT Agreement: %s\n\tInsurance Paid: %s\n\tInsurance Amount: %s\n"
-            "\tCAT Student: %s\n\tTablet GUID: %s" % (self.guid, self.name, self.grade, self.pcsb_agreement,
+            "\tCAT Student: %s\n\tTablet GUID: %s" % (self.guid, self.first_name + " " + self.last_name, self.grade, self.pcsb_agreement,
                 self.cat_agreement, self.insurance_paid, self.insurance_amount, self.cat_student, self.tablet_guid))
 
 class Tablet(BaseTablet):
@@ -312,7 +318,7 @@ class Server:
                 tablet.update()
                 
                 if student:
-                    print("\tStudent on tablet:", student.name)
+                    print("\tStudent on tablet:", student.first_name + " " + student.last_name)
                     student.tablet_guid = tablet.guid
                     student.update_link()
                 else:
@@ -531,7 +537,7 @@ class Server:
                 student_grade = ""
             else:
                 student = Student.from_guid(tablet.student_guid)
-                student_name = student.name
+                student_name = student.first_name + " " + student.last_name
                 student_grade = student.grade
                 student_email = student.email
             
