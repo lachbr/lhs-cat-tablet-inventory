@@ -1,4 +1,5 @@
 from panda3d import core
+core.load_prc_file_data('', 'tcp-header-size 4')
 
 from src.shared.Consts import *
 from src.shared.issue import Issue
