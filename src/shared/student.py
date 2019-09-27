@@ -6,6 +6,7 @@ class Student:
         student.guid = dgi.get_string()
         student.first_name = dgi.get_string()
         student.last_name = dgi.get_string()
+        student.name = student.first_name + " " + student.last_name
         student.grade = dgi.get_string()
         student.email = dgi.get_string()
         student.pcsb_agreement = dgi.get_uint8()

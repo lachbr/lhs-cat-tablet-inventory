@@ -80,6 +80,7 @@ class Student:
         self.last_name = ad_student.sn
         if not self.last_name:
             self.last_name = ""
+        self.name = self.first_name + " " + self.last_name
         self.grade = ad_student.description
         self.email = ad_student.userPrincipalName
         self.guid = ad_student.guid_str
