@@ -7,6 +7,7 @@ from src.shared.Consts import *
 from src.shared.base_server_connection import BaseServerConnection
 from src.shared.base_tablet import BaseTablet
 from src.shared.student import Student
+from src.shared import utils
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PyQt5 import QtCore, QtWidgets
@@ -55,6 +56,16 @@ class ClientWindow(QMainWindow):
             hw = Student.from_datagram(dgi)
             self.hws.append(hw)
             
+        hwnames = []
+        for hw in self.hws:
+            self.ui.hwCombo.addItem(hw.name)
+            hwnames.append(hw.name)
+        completer = QtWidgets.QCompleter(hwnames)
+        completer.setCompletionMode(QtWidgets.QCompleter.InlineCompletion)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.ui.hwCombo.setEditable(True)
+        self.ui.hwCombo.setCompleter(completer)
+            
         self.please_wait_dialog.done(0)
         self.please_wait_dialog = None
         self.__reset()
@@ -100,6 +111,15 @@ class ClientWindow(QMainWindow):
         dg.add_string(self.ui.descTextEntry.toPlainText())
         dg.add_string(self.ui.dateEntry.text())
         dg.add_string(self.ui.problemsTextEntry.toPlainText())
+        
+        hws = [hw for hw in self.hws if hw.name == self.ui.hwCombo.currentText()]
+        hw = hws[0] if len(hws) > 0 else None
+        if hw:
+            print("HW who submitted:", hw.guid)
+            dg.add_string(hw.guid)
+        else:
+            dg.add_string("")
+            
         g_server_connection.send(dg)
         
         QMessageBox.information(self, "Submitted",
@@ -125,6 +145,8 @@ class ClientWindow(QMainWindow):
         self.ui.gradeTextBox.setText("")     
         self.ui.emailTextBox.setText("")
         
+        self.ui.dateEntry.setDate(utils.get_qdate(utils.get_date_string()))
+        
         self.ui.issueReportGroup.setEnabled(False)
         self.ui.descTextEntry.setText("")
         self.ui.problemsTextEntry.setText("")
@@ -140,7 +162,8 @@ class ClientApp(QApplication):
         global g_server_connection
         global g_main_window
         
-        self.server_connection = ServerConnection('c2031svcat2', 7035)
+        host = 'c2031svcat2'
+        self.server_connection = ServerConnection(host, 7035)
         # Timer which ticks the connection to the server
         self.server_timer = QtCore.QTimer()
         self.server_timer.timeout.connect(self.server_connection.run)

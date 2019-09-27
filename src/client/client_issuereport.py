@@ -2,10 +2,9 @@
 
 # Form implementation generated from reading ui file 'client_issuereport.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.0
+# Created by: PyQt5 UI code generator 5.12.2
 #
 # WARNING! All changes made in this file will be lost!
-
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -171,6 +170,17 @@ class Ui_MainWindow(object):
         self.issueReportGroup.setObjectName("issueReportGroup")
         self.gridLayout_6 = QtWidgets.QGridLayout(self.issueReportGroup)
         self.gridLayout_6.setObjectName("gridLayout_6")
+        self.hwCombo = QtWidgets.QComboBox(self.issueReportGroup)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.hwCombo.sizePolicy().hasHeightForWidth())
+        self.hwCombo.setSizePolicy(sizePolicy)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.hwCombo.setFont(font)
+        self.hwCombo.setObjectName("hwCombo")
+        self.gridLayout_6.addWidget(self.hwCombo, 8, 0, 1, 1)
         self.dateEntry = QtWidgets.QDateEdit(self.issueReportGroup)
         font = QtGui.QFont()
         font.setPointSize(12)
@@ -190,12 +200,6 @@ class Ui_MainWindow(object):
         self.label_7.setFont(font)
         self.label_7.setObjectName("label_7")
         self.gridLayout_6.addWidget(self.label_7, 5, 0, 1, 1)
-        self.descTextEntry = QtWidgets.QTextEdit(self.issueReportGroup)
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.descTextEntry.setFont(font)
-        self.descTextEntry.setObjectName("descTextEntry")
-        self.gridLayout_6.addWidget(self.descTextEntry, 1, 0, 1, 1)
         self.label_6 = QtWidgets.QLabel(self.issueReportGroup)
         font = QtGui.QFont()
         font.setPointSize(10)
@@ -220,7 +224,19 @@ class Ui_MainWindow(object):
         self.submitBtn.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.submitBtn.setAutoExclusive(False)
         self.submitBtn.setObjectName("submitBtn")
-        self.gridLayout_6.addWidget(self.submitBtn, 7, 0, 1, 1, QtCore.Qt.AlignRight)
+        self.gridLayout_6.addWidget(self.submitBtn, 9, 0, 1, 1, QtCore.Qt.AlignRight)
+        self.descTextEntry = QtWidgets.QTextEdit(self.issueReportGroup)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.descTextEntry.setFont(font)
+        self.descTextEntry.setObjectName("descTextEntry")
+        self.gridLayout_6.addWidget(self.descTextEntry, 1, 0, 1, 1)
+        self.label = QtWidgets.QLabel(self.issueReportGroup)
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label.setFont(font)
+        self.label.setObjectName("label")
+        self.gridLayout_6.addWidget(self.label, 7, 0, 1, 1)
         self.gridLayout_5.addWidget(self.issueReportGroup, 1, 0, 1, 2)
         self.verticalLayout.addLayout(self.gridLayout_5)
         self.resetButton = QtWidgets.QPushButton(self.centralwidget)
@@ -244,7 +260,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Tablet Inventory - Students"))
         self.studentInfoGroup.setTitle(_translate("MainWindow", "Student Info"))
         self.nameLabel.setText(_translate("MainWindow", "Name"))
         self.gradeLabel.setText(_translate("MainWindow", "Grade"))
@@ -258,4 +274,7 @@ class Ui_MainWindow(object):
         self.label_7.setText(_translate("MainWindow", "Problems?"))
         self.label_6.setText(_translate("MainWindow", "Description of Incident"))
         self.submitBtn.setText(_translate("MainWindow", "Submit"))
+        self.label.setText(_translate("MainWindow", "Team Member"))
         self.resetButton.setText(_translate("MainWindow", "Reset"))
+
+

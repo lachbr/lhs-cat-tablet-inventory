@@ -734,7 +734,8 @@ class NetClientApp(QtWidgets.QApplication):
         global g_server_connection
         global g_main_window
         
-        self.server_connection = ServerConnection('c2031svcat2', 7035)
+        host = 'c2031svcat2'
+        self.server_connection = ServerConnection(host, 7035)
         # Timer which ticks the connection to the server
         self.server_timer = QtCore.QTimer()
         self.server_timer.timeout.connect(self.server_connection.run)
