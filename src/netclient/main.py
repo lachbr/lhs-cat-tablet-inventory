@@ -9,6 +9,7 @@ from src.shared import utils
 
 from panda3d import core
 core.load_prc_file_data('', 'notify-level-net spam')
+core.load_prc_file_data('', 'tcp-header-size 4')
 
 import sys
 import os
@@ -118,8 +119,6 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.tablet_table_generated = False
         self.user_table_generated = False
         
-        self.user_guid_names = {}
-        
         self.students = []
         self.tablets = []
         self.student_tablet_links = []
@@ -169,12 +168,9 @@ class ClientWindow(QtWidgets.QMainWindow):
                     tablet_pcsb = tablet.pcsb_tag
                     tablet_serial = tablet.serial
                     tablet_device = tablet.device_model
-                firstLast = student.name.split(" ", 1)
-                firstName = firstLast[0]
-                lastName = firstLast[1]
                 row = i + 1
-                sheet.write(row, 0, firstName)
-                sheet.write(row, 1, lastName)
+                sheet.write(row, 0, student.first_name)
+                sheet.write(row, 1, student.last_name)
                 sheet.write(row, 2, student.grade)
                 sheet.write(row, 3, tablet_pcsb)
                 sheet.write(row, 4, tablet_serial)
@@ -495,17 +491,6 @@ class ClientWindow(QtWidgets.QMainWindow):
         userView = self.ui.tabletView_2
         
         guid = student.guid
-        name = student.name
-        firstLast = name.split(" ", 1)
-        if len(firstLast) == 2:
-            firstName = firstLast[0]
-            lastName = firstLast[1]
-        elif len(firstLast) == 1:
-            firstName = firstLast[0]
-            lastName = ""
-        else:
-            firstName = ""
-            lastName = ""
         grade = student.grade
         email = student.email
         pcsb_agreement = student.pcsb_agreement
@@ -520,8 +505,8 @@ class ClientWindow(QtWidgets.QMainWindow):
             tablet_pcsb_tag = "No Tablet Assigned"
         
         userView.setSortingEnabled(False)
-        userView.setItem(i, 0, ADTableWidgetItem(guid, firstName))
-        userView.setItem(i, 1, ADTableWidgetItem(guid, lastName))
+        userView.setItem(i, 0, ADTableWidgetItem(guid, student.first_name))
+        userView.setItem(i, 1, ADTableWidgetItem(guid, student.last_name))
         userView.setItem(i, 2, ADTableWidgetItem(guid, email))
         userView.setItem(i, 3, ADTableWidgetItem(guid, grade))
         userView.setItem(i, 4, ADTableWidgetItem(guid, utils.bool_yes_no(cat_student)))
@@ -535,8 +520,6 @@ class ClientWindow(QtWidgets.QMainWindow):
         
     def generate_student_table_ui(self):
         userView = self.ui.tabletView_2
-        
-        self.user_guid_names = {}
         
         # Clear existing rows
         userView.clearContents()
@@ -561,8 +544,6 @@ class ClientWindow(QtWidgets.QMainWindow):
     def update_student_row(self, i, dgi, student = None):
         if not student:
             student = Student.from_datagram(dgi)
-
-        self.user_guid_names[student.guid] = student.name
 
         utils.list_add_replace(self.students, student)
             
@@ -658,7 +639,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             if len(students) > 0:
                 student = students[0]
         if student:
-            name = student.name
+            name = student.first_name + " " + student.last_name
         else:
             name = "Unassigned"
         issues = [issue for issue in self.issues if issue.tablet_guid == tablet.guid]
