@@ -5,6 +5,8 @@ core.load_prc_file_data('', 'tcp-header-size 4')
 
 from src.shared.Consts import *
 from src.shared.base_server_connection import BaseServerConnection
+from src.shared.base_tablet import BaseTablet
+from src.shared.student import Student
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PyQt5 import QtCore
@@ -44,19 +46,16 @@ class ClientWindow(QMainWindow):
     def handle_lookup_tablet_response(self, dgi):
         valid = dgi.get_uint8()
         if valid:
-            guid = dgi.get_string()
-            pcsb_tag = dgi.get_string()
-            serialNo = dgi.get_string()
-            deviceModel = dgi.get_string()
-            studentName = dgi.get_string()
-            grade = dgi.get_string()
-            email = dgi.get_string()
+            tablet = BaseTablet.from_datagram(dgi)
+            student_name = dgi.get_string()
+            student_grade = dgi.get_string()
+            student_email = dgi.get_string()
             
-            self.ui.serialNoTextBox.setText(serialNo)
-            self.ui.deviceModelTextBox.setText(deviceModel)
-            self.ui.nameTextBox.setText(studentName)
-            self.ui.gradeTextBox.setText(grade)
-            self.ui.emailTextBox.setText(email)
+            self.ui.serialNoTextBox.setText(tablet.serial)
+            self.ui.deviceModelTextBox.setText(tablet.device_model)
+            self.ui.nameTextBox.setText(student_name)
+            self.ui.gradeTextBox.setText(student_grade)
+            self.ui.emailTextBox.setText(student_email)
             
             self.ui.pcsbTagTextBox.setReadOnly(True)
             self.ui.serialNoLabel.setEnabled(True)
