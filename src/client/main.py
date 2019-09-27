@@ -9,7 +9,7 @@ from src.shared.base_tablet import BaseTablet
 from src.shared.student import Student
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWidgets
 
 g_server_connection = None
 g_main_window = None
@@ -22,6 +22,8 @@ class ServerConnection(BaseServerConnection):
     def handle_datagram(self, dgi, msg_type):
         if msg_type == MSG_SERVER_LOOKUP_TABLET_RESP:
             g_main_window.handle_lookup_tablet_response(dgi)
+        elif msg_type == MSG_SERVER_NET_ASSISTANTS_RESP:
+            g_main_window.handle_net_assistants_resp(dgi)
         
 class ClientWindow(QMainWindow):
     
@@ -34,6 +36,28 @@ class ClientWindow(QMainWindow):
         self.ui.submitBtn.pressed.connect(self.__handle_press_submit)
         self.ui.pcsbTagTextBox.returnPressed.connect(self.__handle_pcsbtag_submit)
         self.ui.resetButton.pressed.connect(self.__reset)
+        
+        self.please_wait_dialog = QtWidgets.QMessageBox(self)
+        self.please_wait_dialog.setStandardButtons(QtWidgets.QMessageBox.NoButton)
+        self.please_wait_dialog.setText("Please wait...")
+        self.please_wait_dialog.setWindowTitle("Information")
+        self.please_wait_dialog.open()
+        
+        dg = core.Datagram()
+        dg.add_uint16(MSG_CLIENT_REQ_NET_ASSISTANTS)
+        g_server_connection.send(dg)
+        
+        self.hws = []
+        
+    def handle_net_assistants_resp(self, dgi):
+        num_hws = dgi.get_uint32()
+        for i in range(num_hws):
+            hw = Student.from_datagram(dgi)
+            self.hws.append(hw)
+            
+        self.please_wait_dialog.done(0)
+        self.please_wait_dialog = None
+        self.__reset()
         
     def __handle_pcsbtag_submit(self):
         dg = core.Datagram()

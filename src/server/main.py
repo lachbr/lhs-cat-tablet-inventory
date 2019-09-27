@@ -30,6 +30,11 @@ class Student:
         pcsb_students = pyad.from_dn("ou=+LHSO365Students,dc=cat,dc=pcsb,dc=org").get_children()
         cat_faculty = pyad.from_dn("ou=+AllFaculty,dc=cat,dc=pcsb,dc=org").get_children()
         return cat_students + net_assistants + pcsb_students + cat_faculty
+        
+    @staticmethod
+    def get_ad_net_assistants():
+        net_assistants = pyad.from_dn("ou=+NetworkAssistants,dc=cat,dc=pcsb,dc=org").get_children()
+        return net_assistants
     
     @staticmethod
     def from_active_directory_student(ad_student):
@@ -570,6 +575,17 @@ class Server:
             dg.add_uint16(1)
             issue.write_datagram(dg)
             self.send(dg, self.get_all_client_connections(CLIENT_NET_ASSISTANT))
+            
+        elif msg_type == MSG_CLIENT_REQ_NET_ASSISTANTS:
+            hws = Student.get_ad_net_assistants()
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_NET_ASSISTANTS_RESP)
+            num_hws = len(hws)
+            dg.add_uint32(num_hws)
+            for i in range(num_hws):
+                hw = Student.from_active_directory_student(hws[i])
+                hw.write_datagram(dg)
+            self.writer.send(dg, connection)
             
     def get_all_client_connections(self, client_type):
         clients = []
