@@ -42,6 +42,10 @@ class ServerConnection(BaseServerConnection):
     def get_identity(self):
         return CLIENT_NET_ASSISTANT
         
+    def handle_lost_connection(self):
+        QtWidgets.QMessageBox.critical(None, "Error", "Lost connection to server.")
+        sys.exit(1)
+        
     def handle_datagram(self, dgi, msg_type):
         if msg_type == MSG_SERVER_GET_ALL_TABLETS_RESP:
             g_main_window.handle_get_all_tablets_resp(dgi)

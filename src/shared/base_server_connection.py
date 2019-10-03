@@ -48,5 +48,10 @@ class BaseServerConnection:
             if self.reader.get_data(dg):
                 self.__handle_datagram(dg)
                 
+    def __check_disconnect(self):
+        if self.mgr.reset_connection_available():
+            self.handle_lost_connection()
+                
     def run(self):
         self.__check_datagrams()
+        self.__check_disconnect()
