@@ -34,6 +34,7 @@ class TabletEditing:
         dlg = QtWidgets.QDialog(self.mgr)
         dlgcfg = net_edittablet.Ui_EditTabletDialog()
         dlgcfg.setupUi(dlg)
+        dlg.setWindowTitle("Edit Tablet - %s" % self.tablet.pcsb_tag)
         dlgcfg.deviceModelEntry.setText(self.tablet.device_model)
         dlgcfg.serialNoEntry.setText(self.tablet.serial)
         self.generate_issue_table_ui(self.get_issue_list(), dlgcfg)
@@ -155,7 +156,15 @@ class TabletEditing:
         
     def get_issue_list(self):        
         # Modded issues should override the non-modded version
-        issues = [issue for issue in self.mgr.issues if issue.tablet_guid == self.tablet.guid]
+        print("Tablet guid:", self.tablet.guid)
+        issues = []
+        for issue in self.mgr.issues:
+            print(issue.tablet_guid)
+            if issue.tablet_guid == self.tablet.guid:
+                print("\tAdding issue")
+                issues.append(issue)
+				
+        #issues = [issue for issue in self.mgr.issues if issue.tablet_guid == self.tablet.guid]
         for mod_issue in self.mod_issues:
             if mod_issue in issues:
                 print("Modded issue")
@@ -169,6 +178,11 @@ class TabletEditing:
             dlgcfg = self.edit_issue_dialog[1]
             
             mod_issue = self.editing_issue
+            
+            mod_issue.date_of_incident = dlgcfg.doiEdit.text()
+            mod_issue.incident_desc = dlgcfg.incidentDescEdit.toPlainText()
+            mod_issue.problems_desc = dlgcfg.problemsEdit.toPlainText()
+            
             mod_issue.parts_ordered = dlgcfg.partsOrderedCheck.checkState() != 0
             mod_issue.parts_ordered_date = dlgcfg.partsOrderedDateEdit.text()
             mod_issue.parts_expected_date = dlgcfg.partsExpectedDateEdit.text()
@@ -181,6 +195,9 @@ class TabletEditing:
                 
             mod_issue.resolved = dlgcfg.resolvedCheck.checkState() != 0
             mod_issue.fixed_desc = dlgcfg.fixedEdit.toPlainText()
+            
+            mod_issue.temp_tablet_assigned = dlgcfg.tempTabletCheck.checkState() != 0
+            mod_issue.temp_tablet_pcsb = dlgcfg.tempTabletEdit.text()
             
             mod_issue.tablet_returned = dlgcfg.returnedToStudentCheck.checkState() != 0
             
@@ -229,9 +246,12 @@ class TabletEditing:
         dlgcfg.serialNoEdit.setText(self.tablet.serial)
         dlgcfg.pcsbTagEdit.setText(self.tablet.pcsb_tag)
         
-        dlgcfg.doiEdit.setText(issue.date_of_incident)
+        dlgcfg.doiEdit.setDate(utils.get_qdate(issue.date_of_incident))
         dlgcfg.incidentDescEdit.setText(issue.incident_desc)
         dlgcfg.problemsEdit.setText(issue.problems_desc)
+        
+        dlgcfg.tempTabletCheck.setChecked(bool(issue.temp_tablet_assigned))
+        dlgcfg.tempTabletEdit.setText(issue.temp_tablet_pcsb)
         
         dlgcfg.partsOrderedCheck.setChecked(bool(issue.parts_ordered))
         dlgcfg.partsOrderedDateEdit.setDate(utils.get_qdate(issue.parts_ordered_date))

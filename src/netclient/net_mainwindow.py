@@ -66,7 +66,7 @@ class Ui_MainWindow(object):
         self.tabletView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.tabletView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tabletView.setRowCount(0)
-        self.tabletView.setColumnCount(5)
+        self.tabletView.setColumnCount(6)
         self.tabletView.setObjectName("tabletView")
         item = QtWidgets.QTableWidgetItem()
         self.tabletView.setHorizontalHeaderItem(0, item)
@@ -78,6 +78,8 @@ class Ui_MainWindow(object):
         self.tabletView.setHorizontalHeaderItem(3, item)
         item = QtWidgets.QTableWidgetItem()
         self.tabletView.setHorizontalHeaderItem(4, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.tabletView.setHorizontalHeaderItem(5, item)
         self.tabletView.horizontalHeader().setCascadingSectionResizes(False)
         self.tabletView.horizontalHeader().setStretchLastSection(True)
         self.verticalLayout_3.addWidget(self.tabletView)
@@ -210,7 +212,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -233,6 +235,8 @@ class Ui_MainWindow(object):
         item = self.tabletView.horizontalHeaderItem(3)
         item.setText(_translate("MainWindow", "Active Issue"))
         item = self.tabletView.horizontalHeaderItem(4)
+        item.setText(_translate("MainWindow", "Problems"))
+        item = self.tabletView.horizontalHeaderItem(5)
         item.setText(_translate("MainWindow", "Assignee"))
         self.tabletExportExcel.setText(_translate("MainWindow", "Export to Excel Sheet"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Tablet Inventory"))

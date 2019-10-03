@@ -131,6 +131,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.__request_all_tablets()
         self.__request_all_users()
         
+        self.show_please_wait(text = "Populating tables...")
+        
     def __export_users_to_excel(self):
         filedlg = QtWidgets.QFileDialog(self, "Select export location", os.environ["USERPROFILE"] + "\\Desktop", "Excel File (*.xls)")
         filedlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
@@ -312,6 +314,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         dlg = QtWidgets.QDialog(self)
         dlgconfig = net_editstudent.Ui_Dialog()
         dlgconfig.setupUi(dlg)
+        dlg.setWindowTitle("Edit User - %s" % user.name)
         self.__set_checkbox_state(dlgconfig.pcsbAgreementCheckBox, user.pcsb_agreement)
         self.__set_checkbox_state(dlgconfig.catAgreementCheckBox, user.cat_agreement)
         self.__set_checkbox_state(dlgconfig.insuranceCheckBox, user.insurance_paid)
@@ -411,13 +414,13 @@ class ClientWindow(QtWidgets.QMainWindow):
         dg.add_uint16(MSG_CLIENT_GET_ALL_USERS)
         g_server_connection.send(dg)
         
-    def show_please_wait(self):
+    def show_please_wait(self, title = "Information", text = "Please wait..."):
         self.hide_please_wait()
         
         self.please_wait_dialog = QtWidgets.QMessageBox(self)
         self.please_wait_dialog.setStandardButtons(QtWidgets.QMessageBox.NoButton)
-        self.please_wait_dialog.setText("Please wait...")
-        self.please_wait_dialog.setWindowTitle("Information")
+        self.please_wait_dialog.setText(text)
+        self.please_wait_dialog.setWindowTitle(title)
         self.please_wait_dialog.open()
         
     def hide_please_wait(self):
@@ -622,6 +625,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         if not self.tablet_table_generated:
             self.generate_tablet_table_ui()
             
+        self.hide_please_wait()
+            
     def update_tablet_row_ui(self, i, tablet):
         guid = tablet.guid
         pcsb = tablet.pcsb_tag
@@ -644,9 +649,11 @@ class ClientWindow(QtWidgets.QMainWindow):
             name = "Unassigned"
         issues = [issue for issue in self.issues if issue.tablet_guid == tablet.guid]
         active_issue = False
+        issue_problems = ""
         for issue in issues:
             if not issue.resolved:
                 active_issue = True
+                issue_problems = issue.problems_desc
                 break
         if active_issue:
             issue = "Active Issue"
@@ -658,7 +665,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
         self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
         self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
-        self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
+        self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, issue_problems))
+        self.ui.tabletView.setItem(i, 5, ADTableWidgetItem(guid, name))
         self.ui.tabletView.setSortingEnabled(True)
             
     def generate_tablet_table_ui(self):

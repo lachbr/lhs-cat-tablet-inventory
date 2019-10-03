@@ -4,7 +4,7 @@ class Issue:
                  problems_desc, date_of_incident, parts_ordered,
                  parts_ordered_date, parts_expected_date,
                  insurance_or_warranty, fixed_desc, tablet_returned,
-                 team_member_guid, return_date, resolved):
+                 team_member_guid, return_date, resolved, temp_tablet_assigned = 0, temp_tablet_pcsb = ""):
                  
         self.issue_id = iid
         self.tablet_guid = tablet_guid
@@ -20,6 +20,13 @@ class Issue:
         self.team_member_guid = team_member_guid
         self.return_date = return_date
         self.resolved = resolved
+
+        self.temp_tablet_assigned = temp_tablet_assigned
+        self.temp_tablet_pcsb = temp_tablet_pcsb
+        if self.temp_tablet_assigned is None:
+            self.temp_tablet_assigned = 0
+        if self.temp_tablet_pcsb is None:
+            self.temp_tablet_pcsb = ""
         
     def __eq__(self, other):
         return self.issue_id == other.issue_id
@@ -33,22 +40,23 @@ class Issue:
             issues = c.fetchall()
             self.issue_id = len(issues)
             
-            c.execute("INSERT INTO TabletIssue VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            c.execute("INSERT INTO TabletIssue VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (self.tablet_guid, self.incident_desc, self.problems_desc,
                  self.date_of_incident, self.parts_ordered, self.parts_ordered_date,
                  self.parts_expected_date, self.insurance_or_warranty, self.fixed_desc,
                  self.tablet_returned, self.team_member_guid, self.return_date,
-                 self.resolved))
+                 self.resolved, self.temp_tablet_assigned, self.temp_tablet_pcsb))
         else:
             # Only a select set of properties can be changed on an issue once already
             # submitted.
             c.execute(
-            """UPDATE TabletIssue SET PartsOrdered = ?, PartsOrderedDate = ?, PartsExpectedDate = ?,
+            """UPDATE TabletIssue SET IncidentDescription = ?, ProblemsDescription = ?, DateOfIncident = ?, PartsOrdered = ?, PartsOrderedDate = ?, PartsExpectedDate = ?,
             InsuranceOrWarranty = ?, FixedDescription = ?, TabletReturned = ?, ReturnDate = ?,
-            Resolved = ? WHERE ID = ?""",
-            (self.parts_ordered, self.parts_ordered_date, self.parts_expected_date,
+            Resolved = ?, TempTabletAssigned = ?, TempTabletPCSBTag = ? WHERE ID = ?""",
+            (self.incident_desc, self.problems_desc, self.date_of_incident, self.parts_ordered,
+            self.parts_ordered_date, self.parts_expected_date,
             self.insurance_or_warranty, self.fixed_desc, self.tablet_returned,
-            self.return_date, self.resolved, self.issue_id))
+            self.return_date, self.resolved, self.temp_tablet_assigned, self.temp_tablet_pcsb, self.issue_id))
         
     def write_datagram(self, dg):
         dg.add_int32(self.issue_id)
@@ -65,6 +73,8 @@ class Issue:
         dg.add_string(self.team_member_guid)
         dg.add_string(self.return_date)
         dg.add_uint8(self.resolved)
+        dg.add_uint8(self.temp_tablet_assigned)
+        dg.add_string(self.temp_tablet_pcsb)
         
     @staticmethod
     def from_datagram(dgi):
@@ -82,8 +92,11 @@ class Issue:
         hwguid              = dgi.get_string()
         return_date         = dgi.get_string()
         resolved            = dgi.get_uint8()
+        temp_tablet         = dgi.get_uint8()
+        temp_pcsb           = dgi.get_string()
         
         return Issue(iid, tablet_guid, incident_desc, problems_desc, doi,
                      parts_ordered, parts_ordered_date, parts_expected_date,
-                     iow, fixed_desc, returned, hwguid, return_date, resolved)
+                     iow, fixed_desc, returned, hwguid, return_date, resolved,
+                     temp_tablet, temp_pcsb)
                      

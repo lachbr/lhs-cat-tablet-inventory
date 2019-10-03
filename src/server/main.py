@@ -15,7 +15,7 @@ import sqlite3
 g_server_connection = None
 
 EXCEL_IMPORT = False
-SYNC_ACTIVE_DIRECTORY = True
+SYNC_ACTIVE_DIRECTORY = False
 WIPE_DB = False
 
 class Student:
