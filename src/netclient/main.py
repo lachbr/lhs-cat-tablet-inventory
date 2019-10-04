@@ -254,7 +254,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         elif mode == T_SEARCHMODE_SERIAL:
             return 2
         elif mode == T_SEARCHMODE_NAME:
-            return 4
+            return 5
             
     def get_column_for_user_search_mode(self):
         mode = self.user_search_mode
