@@ -12,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1124, 798)
+        MainWindow.resize(1307, 814)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -143,7 +143,7 @@ class Ui_MainWindow(object):
         self.tabletView_2.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.tabletView_2.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tabletView_2.setRowCount(0)
-        self.tabletView_2.setColumnCount(11)
+        self.tabletView_2.setColumnCount(12)
         self.tabletView_2.setObjectName("tabletView_2")
         item = QtWidgets.QTableWidgetItem()
         self.tabletView_2.setHorizontalHeaderItem(0, item)
@@ -167,6 +167,8 @@ class Ui_MainWindow(object):
         self.tabletView_2.setHorizontalHeaderItem(9, item)
         item = QtWidgets.QTableWidgetItem()
         self.tabletView_2.setHorizontalHeaderItem(10, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.tabletView_2.setHorizontalHeaderItem(11, item)
         self.tabletView_2.horizontalHeader().setStretchLastSection(True)
         self.verticalLayout_4.addWidget(self.tabletView_2)
         self.userExportExcel = QtWidgets.QPushButton(self.groupBox_4)
@@ -212,7 +214,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -271,6 +273,8 @@ class Ui_MainWindow(object):
         item.setText(_translate("MainWindow", "Insurance Amount"))
         item = self.tabletView_2.horizontalHeaderItem(10)
         item.setText(_translate("MainWindow", "Date of Insurance"))
+        item = self.tabletView_2.horizontalHeaderItem(11)
+        item.setText(_translate("MainWindow", "Equipment Receipt"))
         self.userExportExcel.setText(_translate("MainWindow", "Export to Excel Sheet"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Students/Faculty"))
         self.timeLabel.setText(_translate("MainWindow", "Time: 8:46 AM"))

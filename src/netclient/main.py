@@ -322,6 +322,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.__set_checkbox_state(dlgconfig.pcsbAgreementCheckBox, user.pcsb_agreement)
         self.__set_checkbox_state(dlgconfig.catAgreementCheckBox, user.cat_agreement)
         self.__set_checkbox_state(dlgconfig.insuranceCheckBox, user.insurance_paid)
+        self.__set_checkbox_state(dlgconfig.equipmentReceiptCheck, user.equipment_receipt)
         dlgconfig.insuranceAmountEdit.setText(user.insurance_amount)
 
         links = [link for link in self.student_tablet_links if link.student_guid == guid]
@@ -361,6 +362,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             dg.add_uint8(has_insurance)
             dg.add_string(dlgcfg.insuranceAmountEdit.text())
             dg.add_string(dlgcfg.tabletPCSBEdit.text())
+            dg.add_uint8(dlgcfg.equipmentReceiptCheck.checkState() != 0)
             if has_insurance and (student and not student.insurance_paid):
                 print("Student now has insurance")
                 dg.add_string(utils.get_date_string())
@@ -523,6 +525,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         userView.setItem(i, 8, ADTableWidgetItem(guid, utils.bool_yes_no(insurance_paid)))
         userView.setItem(i, 9, ADTableWidgetItem(guid, insurance_amount))
         userView.setItem(i, 10, ADTableWidgetItem(guid, student.date_of_insurance))
+        userView.setItem(i, 11, ADTableWidgetItem(guid, utils.bool_yes_no(student.equipment_receipt)))
         userView.setSortingEnabled(True)
         
     def generate_student_table_ui(self):

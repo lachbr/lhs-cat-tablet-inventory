@@ -55,10 +55,12 @@ class Student:
         link = c.fetchone()
         if link:
             tablet_guid = link[1]
+            
+        equipment_receipt = db_student[6] if len(db_student) >= 7 else None
         
         return Student(
             ad_student, db_student[1], db_student[2],
-            db_student[3], db_student[4], db_student[5], tablet_guid
+            db_student[3], db_student[4], db_student[5], equipment_receipt, tablet_guid
         )
         
     @staticmethod
@@ -77,7 +79,7 @@ class Student:
             ad_student = None
         return Student.from_active_directory_student(ad_student)
         
-    def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", insurance_date = "", tablet_guid = None):
+    def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", insurance_date = "", equipment_receipt = False, tablet_guid = None):
         self.ad_student = ad_student
         self.first_name = ad_student.givenName
         if not self.first_name:
@@ -94,6 +96,9 @@ class Student:
         self.insurance_paid = insurance_paid
         self.insurance_amount = insurance_amount
         self.date_of_insurance = insurance_date
+        self.equipment_receipt = equipment_receipt
+        if self.equipment_receipt is None:
+            self.equipment_receipt = 0
         
         group_name = ad_student.parent_container.prefixed_cn
         self.cat_student = group_name in [Student.NET_GROUP, Student.CAT_GROUP]
@@ -119,11 +124,12 @@ class Student:
         else:
             dg.add_string("")
         dg.add_uint8(self.net_assistant)
+        dg.add_uint8(self.equipment_receipt)
         
     def update(self):
         c = g_server_connection.db_connection.cursor()
-        c.execute("UPDATE Student SET InternetAgreementPCSB = ?, InternetAgreementCAT = ?, InsurancePaid = ?, InsuranceAmount = ?, InsuranceDate = ? WHERE GUID = ?",
-                 (int(self.pcsb_agreement), int(self.cat_agreement), int(self.insurance_paid), self.insurance_amount, self.date_of_insurance, self.guid))
+        c.execute("UPDATE Student SET InternetAgreementPCSB = ?, InternetAgreementCAT = ?, InsurancePaid = ?, InsuranceAmount = ?, InsuranceDate = ?, EquipmentReceipt = ? WHERE GUID = ?",
+                 (int(self.pcsb_agreement), int(self.cat_agreement), int(self.insurance_paid), self.insurance_amount, self.date_of_insurance, self.equipment_receipt, self.guid))
         g_server_connection.db_connection.commit()
                  
     def update_link(self):
@@ -370,7 +376,7 @@ class Server:
             student = c.fetchone()
             if not student:
                 # Doesn't exist, make a default entry.
-                c.execute("INSERT INTO Student VALUES (?,?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00", ""))
+                c.execute("INSERT INTO Student VALUES (?,?,?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00", "", 0))
                 print("Added new student", ad_student.cn)
                 
         # Now search for students in our local database that no longer exist in Active Directory.
@@ -806,6 +812,7 @@ class Server:
                     insurance = dgi.get_uint8()
                     insurance_amt = dgi.get_string()
                     tablet_pcsb = dgi.get_string()
+                    equipment_receipt = dgi.get_uint8()
                     
                     error = False
                     
@@ -819,6 +826,7 @@ class Server:
                     
                     student.pcsb_agreement = pcsb_agreement
                     student.cat_agreement = cat_agreement
+                    student.equipment_receipt = equipment_receipt
                     student.insurance_paid = insurance
                     student.insurance_amount = insurance_amt
                     if not insurance:
