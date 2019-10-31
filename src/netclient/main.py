@@ -158,6 +158,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             sheet.write(0, 8, 'Insurance Paid')
             sheet.write(0, 9, 'Insurance Amount')
             sheet.write(0, 10, 'Insurance Date')
+            sheet.write(0, 11, 'Equipment Receipt')
             
             for i in range(len(self.students)):
                 student = self.students[i]
@@ -186,6 +187,7 @@ class ClientWindow(QtWidgets.QMainWindow):
                 sheet.write(row, 8, utils.bool_yes_no(student.insurance_paid))
                 sheet.write(row, 9, student.insurance_amount)
                 sheet.write(row, 10, student.date_of_insurance)
+                sheet.write(row, 11, utils.bool_yes_no(student.equipment_receipt))
             wb.save(export_path)
     
     def __handle_tablet_search_edited(self, text):
