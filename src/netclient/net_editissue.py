@@ -19,7 +19,7 @@ class Ui_Dialog(object):
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
-        self.gridLayout.addWidget(self.buttonBox, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.buttonBox, 2, 0, 1, 1)
         self.tabWidget = QtWidgets.QTabWidget(Dialog)
         self.tabWidget.setObjectName("tabWidget")
         self.tab = QtWidgets.QWidget()
@@ -206,6 +206,14 @@ class Ui_Dialog(object):
         self.gridLayout_3.addWidget(self.newStepButton, 1, 0, 1, 1)
         self.tabWidget.addTab(self.tab_2, "")
         self.gridLayout.addWidget(self.tabWidget, 0, 0, 1, 1)
+        self.printBtn = QtWidgets.QPushButton(Dialog)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.printBtn.sizePolicy().hasHeightForWidth())
+        self.printBtn.setSizePolicy(sizePolicy)
+        self.printBtn.setObjectName("printBtn")
+        self.gridLayout.addWidget(self.printBtn, 1, 0, 1, 1)
 
         self.retranslateUi(Dialog)
         self.tabWidget.setCurrentIndex(0)
@@ -245,5 +253,6 @@ class Ui_Dialog(object):
         item.setText(_translate("Dialog", "Steps Taken to Fix the Tablet"))
         self.newStepButton.setText(_translate("Dialog", "Log New Step"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Dialog", "Repair Log"))
+        self.printBtn.setText(_translate("Dialog", "Print"))
 
 

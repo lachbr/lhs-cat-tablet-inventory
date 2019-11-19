@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, Qt, QtCore
+from PyQt5 import QtWidgets, Qt, QtCore, QtPrintSupport, QtGui
 
 from panda3d import core
 
@@ -208,6 +208,42 @@ class TabletEditing:
         self.editing_issue = None
         self.edit_issue_dialog = None
         
+    def scalePrintImageToPage(self, pixmap, painter, printer):
+        xscale = printer.pageRect().width() / float(pixmap.width())
+        yscale = printer.pageRect().height() / float(pixmap.height())
+        scale = min(xscale, yscale)
+        painter.translate(printer.paperRect().x() + printer.pageRect().width() / 2,
+                          printer.paperRect().y() + printer.pageRect().height() / 2)
+        painter.scale(scale, scale)
+        painter.translate(-pixmap.width() / 2, -pixmap.height() / 2)        
+        
+    def __handle_press_print(self):
+        printer = QtPrintSupport.QPrinter()
+        
+        printdlg = QtPrintSupport.QPrintDialog(printer, self.edit_issue_dialog[0])
+        printdlg.setWindowTitle("Print Issue")
+        if not printdlg.exec():
+            return
+        
+        printer.setFullPage(True)
+        
+        pixmap = self.edit_issue_dialog[1].tab.grab()
+        pixmap2 = self.edit_issue_dialog[1].repairLogTable.grab()
+        
+        painter = QtGui.QPainter()
+        painter.begin(printer)
+        self.scalePrintImageToPage(pixmap, painter, printer)
+        painter.drawPixmap(0, 0, pixmap)
+        painter.end()
+        
+        printer.newPage()
+        
+        painter = QtGui.QPainter()
+        painter.begin(printer)
+        self.scalePrintImageToPage(pixmap2, painter, printer)
+        painter.drawPixmap(0, 0, pixmap2)
+        painter.end()
+        
     def __handle_double_click_issue(self, item):
         issue_id = item.iid
         issues = [issue for issue in self.mgr.issues if issue.issue_id == issue_id]
@@ -287,6 +323,8 @@ class TabletEditing:
             # Issue has been resolved, information is for viewing only.
             dlgcfg.tab.setDisabled(True)
             dlgcfg.tab_2.setDisabled(True)
+            
+        dlgcfg.printBtn.pressed.connect(self.__handle_press_print)
         
         dlg.finished.connect(self.__handle_edit_issue_finish)
         dlg.open()

@@ -14,7 +14,7 @@
    <string>Issue</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="0">
+   <item row="2" column="0">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -36,13 +36,6 @@
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
         <layout class="QFormLayout" name="formLayout">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Student/Teacher Name</string>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="1">
           <widget class="QLineEdit" name="studentNameEdit">
            <property name="enabled">
@@ -142,6 +135,13 @@
            </property>
           </widget>
          </item>
+         <item row="7" column="1">
+          <widget class="QDateEdit" name="doiEdit">
+           <property name="calendarPopup">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
          <item row="8" column="0">
           <widget class="QLabel" name="label_6">
            <property name="text">
@@ -180,6 +180,34 @@
           <widget class="Line" name="line">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="0">
+          <widget class="QLabel" name="label_15">
+           <property name="text">
+            <string>Loaner Tablet Issued?</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="1">
+          <widget class="QCheckBox" name="tempTabletCheck">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="12" column="0">
+          <widget class="QLabel" name="label_16">
+           <property name="text">
+            <string>Loaner Tablet PCSB Tag</string>
+           </property>
+          </widget>
+         </item>
+         <item row="12" column="1">
+          <widget class="QLineEdit" name="tempTabletEdit">
+           <property name="placeholderText">
+            <string>Enter Loaner Tablet PCSB Tag here</string>
            </property>
           </widget>
          </item>
@@ -291,38 +319,10 @@
            </property>
           </widget>
          </item>
-         <item row="11" column="0">
-          <widget class="QLabel" name="label_15">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
            <property name="text">
-            <string>Loaner Tablet Issued?</string>
-           </property>
-          </widget>
-         </item>
-         <item row="11" column="1">
-          <widget class="QCheckBox" name="tempTabletCheck">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item row="12" column="0">
-          <widget class="QLabel" name="label_16">
-           <property name="text">
-            <string>Loaner Tablet PCSB Tag</string>
-           </property>
-          </widget>
-         </item>
-         <item row="12" column="1">
-          <widget class="QLineEdit" name="tempTabletEdit">
-           <property name="placeholderText">
-            <string>Enter Loaner Tablet PCSB Tag here</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="1">
-          <widget class="QDateEdit" name="doiEdit">
-           <property name="calendarPopup">
-            <bool>true</bool>
+            <string>Student/Teacher Name</string>
            </property>
           </widget>
          </item>
@@ -381,6 +381,19 @@
        </item>
       </layout>
      </widget>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QPushButton" name="printBtn">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Print</string>
+     </property>
     </widget>
    </item>
   </layout>
