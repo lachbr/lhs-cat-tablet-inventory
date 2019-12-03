@@ -30,6 +30,7 @@ This is the new tablet inventory system, used for keeping inventory of all table
    * Hash built_netclient\\netclient.exe
    * Output to built_netclient\\netclient_hash.txt
 8) Upload output files (client.exe, client_hash.txt, netclient.exe, netclient_hash.txt) to ftp://c2031snas2/TabletInventory2020
+9) Ensure c2031svcat2 has latest commits from production branch
 
 ### How to build installer
 1) Complete steps 1-8 above
