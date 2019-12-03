@@ -553,6 +553,11 @@ class Server:
                 student_name = student.first_name + " " + student.last_name
                 student_grade = student.grade
                 student_email = student.email
+                
+            if not student_grade:
+                student_grade = ""
+            if not student_email:
+                student_email = ""
             
             dg.add_uint8(1)
             tablet.write_datagram(dg)
@@ -585,6 +590,13 @@ class Server:
             
         elif msg_type == MSG_CLIENT_REQ_NET_ASSISTANTS:
             hws = Student.get_ad_net_assistants()
+            
+            # Borg doesn't want this selectable in the issue dropdown.
+            for hw in hws:
+                if hw.name == "CAT network assistant":
+                    hws.remove(hw)
+                    break
+                    
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_NET_ASSISTANTS_RESP)
             num_hws = len(hws)
