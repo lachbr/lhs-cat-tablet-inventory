@@ -5,11 +5,38 @@ This is the new tablet inventory system, used for keeping inventory of all table
 ## Dependencies
 * Python 3
 * via pip:
-  * pyqt5
+  * pyqt5==5.12.2
   * pywin32
   * pyad
   * panda3d
+  * xlwt
+  * xlrd
+  * pyinstaller
 * Qt Designer (for editing the UI)
+* nsis
+
+### How to build
+1) Ensure all dependencies are installed
+2) Ensure current branch is production
+3) Ensure client and netclient are set to connect to production server (c2031svcat2)
+#### Skip 4-5 if only netclient needs rebuilding
+4) Run build_client.bat
+5) Run run_genhash.bat
+   * Hash built_client\\client.exe
+   * Output to built_client\\client_hash.txt
+#### Skip 6-7 if only client needs rebuilding
+6) Run build_netclient.bat
+7) Run run_genhash.bat
+   * Hash built_netclient\\netclient.exe
+   * Output to built_netclient\\netclient_hash.txt
+8) Upload output files (client.exe, client_hash.txt, netclient.exe, netclient_hash.txt) to ftp://c2031snas2/TabletInventory2020
+
+### How to build installer
+1) Complete steps 1-8 above
+2) Run NSIS gui
+3) Use script installer.nsi
+4) Build installer
+5) Upload installer to ftp://c2031snas2/TabletInventory2020
 
 ---
 
