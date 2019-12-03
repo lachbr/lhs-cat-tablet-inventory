@@ -286,6 +286,21 @@
          <string>Issue Report</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_6">
+         <item row="8" column="0">
+          <widget class="QComboBox" name="hwCombo">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+          </widget>
+         </item>
          <item row="3" column="0">
           <widget class="QDateEdit" name="dateEntry">
            <property name="font">
@@ -322,15 +337,6 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QTextEdit" name="descTextEntry">
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="0">
           <widget class="QLabel" name="label_6">
            <property name="font">
@@ -352,7 +358,7 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="0" alignment="Qt::AlignRight">
+         <item row="9" column="0" alignment="Qt::AlignRight">
           <widget class="QPushButton" name="submitBtn">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -373,6 +379,27 @@
            </property>
            <property name="autoExclusive">
             <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QTextEdit" name="descTextEntry">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Team Member</string>
            </property>
           </widget>
          </item>

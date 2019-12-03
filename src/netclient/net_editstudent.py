@@ -2,10 +2,9 @@
 
 # Form implementation generated from reading ui file 'net_editstudent.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.0
+# Created by: PyQt5 UI code generator 5.12.2
 #
 # WARNING! All changes made in this file will be lost!
-
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -31,19 +30,22 @@ class Ui_Dialog(object):
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.catAgreementCheckBox)
         self.insuranceCheckBox = QtWidgets.QCheckBox(Dialog)
         self.insuranceCheckBox.setObjectName("insuranceCheckBox")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.insuranceCheckBox)
+        self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.insuranceCheckBox)
         self.label = QtWidgets.QLabel(Dialog)
         self.label.setObjectName("label")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label)
+        self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label)
         self.insuranceAmountEdit = QtWidgets.QLineEdit(Dialog)
         self.insuranceAmountEdit.setObjectName("insuranceAmountEdit")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.insuranceAmountEdit)
+        self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.insuranceAmountEdit)
         self.label_2 = QtWidgets.QLabel(Dialog)
         self.label_2.setObjectName("label_2")
-        self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_2)
+        self.formLayout.setWidget(6, QtWidgets.QFormLayout.LabelRole, self.label_2)
         self.tabletPCSBEdit = QtWidgets.QLineEdit(Dialog)
         self.tabletPCSBEdit.setObjectName("tabletPCSBEdit")
-        self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.tabletPCSBEdit)
+        self.formLayout.setWidget(6, QtWidgets.QFormLayout.FieldRole, self.tabletPCSBEdit)
+        self.equipmentReceiptCheck = QtWidgets.QCheckBox(Dialog)
+        self.equipmentReceiptCheck.setObjectName("equipmentReceiptCheck")
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.equipmentReceiptCheck)
         self.gridLayout.addLayout(self.formLayout, 0, 0, 1, 1)
 
         self.retranslateUi(Dialog)
@@ -61,3 +63,6 @@ class Ui_Dialog(object):
         self.insuranceAmountEdit.setPlaceholderText(_translate("Dialog", "Example: $75"))
         self.label_2.setText(_translate("Dialog", "Assigned Tablet"))
         self.tabletPCSBEdit.setPlaceholderText(_translate("Dialog", "Scan PCSB Tag (Bar Code) here"))
+        self.equipmentReceiptCheck.setText(_translate("Dialog", "Equipment Receipt"))
+
+

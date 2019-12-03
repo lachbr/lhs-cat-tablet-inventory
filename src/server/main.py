@@ -15,7 +15,7 @@ import sqlite3
 g_server_connection = None
 
 EXCEL_IMPORT = False
-SYNC_ACTIVE_DIRECTORY = True
+SYNC_ACTIVE_DIRECTORY = False
 WIPE_DB = False
 
 class Student:
@@ -30,6 +30,11 @@ class Student:
         pcsb_students = pyad.from_dn("ou=+LHSO365Students,dc=cat,dc=pcsb,dc=org").get_children()
         cat_faculty = pyad.from_dn("ou=+AllFaculty,dc=cat,dc=pcsb,dc=org").get_children()
         return cat_students + net_assistants + pcsb_students + cat_faculty
+        
+    @staticmethod
+    def get_ad_net_assistants():
+        net_assistants = pyad.from_dn("ou=+NetworkAssistants,dc=cat,dc=pcsb,dc=org").get_children()
+        return net_assistants
     
     @staticmethod
     def from_active_directory_student(ad_student):
@@ -50,10 +55,12 @@ class Student:
         link = c.fetchone()
         if link:
             tablet_guid = link[1]
+            
+        equipment_receipt = db_student[6] if len(db_student) >= 7 else None
         
         return Student(
             ad_student, db_student[1], db_student[2],
-            db_student[3], db_student[4], db_student[5], tablet_guid
+            db_student[3], db_student[4], db_student[5], equipment_receipt, tablet_guid
         )
         
     @staticmethod
@@ -72,7 +79,7 @@ class Student:
             ad_student = None
         return Student.from_active_directory_student(ad_student)
         
-    def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", insurance_date = "", tablet_guid = None):
+    def __init__(self, ad_student, pcsb_agreement = False, cat_agreement = False, insurance_paid = False, insurance_amount = "$0.00", insurance_date = "", equipment_receipt = False, tablet_guid = None):
         self.ad_student = ad_student
         self.first_name = ad_student.givenName
         if not self.first_name:
@@ -80,6 +87,7 @@ class Student:
         self.last_name = ad_student.sn
         if not self.last_name:
             self.last_name = ""
+        self.name = self.first_name + " " + self.last_name
         self.grade = ad_student.description
         self.email = ad_student.userPrincipalName
         self.guid = ad_student.guid_str
@@ -88,6 +96,9 @@ class Student:
         self.insurance_paid = insurance_paid
         self.insurance_amount = insurance_amount
         self.date_of_insurance = insurance_date
+        self.equipment_receipt = equipment_receipt
+        if self.equipment_receipt is None:
+            self.equipment_receipt = 0
         
         group_name = ad_student.parent_container.prefixed_cn
         self.cat_student = group_name in [Student.NET_GROUP, Student.CAT_GROUP]
@@ -113,11 +124,12 @@ class Student:
         else:
             dg.add_string("")
         dg.add_uint8(self.net_assistant)
+        dg.add_uint8(self.equipment_receipt)
         
     def update(self):
         c = g_server_connection.db_connection.cursor()
-        c.execute("UPDATE Student SET InternetAgreementPCSB = ?, InternetAgreementCAT = ?, InsurancePaid = ?, InsuranceAmount = ?, InsuranceDate = ? WHERE GUID = ?",
-                 (int(self.pcsb_agreement), int(self.cat_agreement), int(self.insurance_paid), self.insurance_amount, self.date_of_insurance, self.guid))
+        c.execute("UPDATE Student SET InternetAgreementPCSB = ?, InternetAgreementCAT = ?, InsurancePaid = ?, InsuranceAmount = ?, InsuranceDate = ?, EquipmentReceipt = ? WHERE GUID = ?",
+                 (int(self.pcsb_agreement), int(self.cat_agreement), int(self.insurance_paid), self.insurance_amount, self.date_of_insurance, self.equipment_receipt, self.guid))
         g_server_connection.db_connection.commit()
                  
     def update_link(self):
@@ -364,7 +376,7 @@ class Server:
             student = c.fetchone()
             if not student:
                 # Doesn't exist, make a default entry.
-                c.execute("INSERT INTO Student VALUES (?,?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00", ""))
+                c.execute("INSERT INTO Student VALUES (?,?,?,?,?,?,?)", (ad_student.guid_str, 0, 0, 0, "$0.00", "", 0))
                 print("Added new student", ad_student.cn)
                 
         # Now search for students in our local database that no longer exist in Active Directory.
@@ -541,6 +553,11 @@ class Server:
                 student_name = student.first_name + " " + student.last_name
                 student_grade = student.grade
                 student_email = student.email
+                
+            if not student_grade:
+                student_grade = ""
+            if not student_email:
+                student_email = ""
             
             dg.add_uint8(1)
             tablet.write_datagram(dg)
@@ -558,17 +575,36 @@ class Server:
             incident_desc = dgi.get_string()
             incident_date = dgi.get_string()
             problem_desc = dgi.get_string()
+            hwguid = dgi.get_string()
             c = self.db_connection.cursor()
-            issue = Issue(-1, tablet.guid, incident_desc, problem_desc, incident_date, 0, "", "", 2, "", 0, "", "", 0)
+            issue = Issue(-1, tablet.guid, incident_desc, problem_desc, incident_date, 0, "", "", 2, "", 0, hwguid, "", 0)
             issue.write_database(c)
             self.db_connection.commit()
-            print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc))
+            print("Submitting:\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s" % (pcsb_tag, incident_desc, incident_date, problem_desc, hwguid))
             
             dg = core.Datagram()
             dg.add_uint16(MSG_SERVER_UPDATE_ISSUE)
             dg.add_uint16(1)
             issue.write_datagram(dg)
             self.send(dg, self.get_all_client_connections(CLIENT_NET_ASSISTANT))
+            
+        elif msg_type == MSG_CLIENT_REQ_NET_ASSISTANTS:
+            hws = Student.get_ad_net_assistants()
+            
+            # Borg doesn't want this selectable in the issue dropdown.
+            for hw in hws:
+                if hw.name == "CAT network assistant":
+                    hws.remove(hw)
+                    break
+                    
+            dg = core.Datagram()
+            dg.add_uint16(MSG_SERVER_NET_ASSISTANTS_RESP)
+            num_hws = len(hws)
+            dg.add_uint32(num_hws)
+            for i in range(num_hws):
+                hw = Student.from_active_directory_student(hws[i])
+                hw.write_datagram(dg)
+            self.writer.send(dg, connection)
             
     def get_all_client_connections(self, client_type):
         clients = []
@@ -788,6 +824,7 @@ class Server:
                     insurance = dgi.get_uint8()
                     insurance_amt = dgi.get_string()
                     tablet_pcsb = dgi.get_string()
+                    equipment_receipt = dgi.get_uint8()
                     
                     error = False
                     
@@ -801,6 +838,7 @@ class Server:
                     
                     student.pcsb_agreement = pcsb_agreement
                     student.cat_agreement = cat_agreement
+                    student.equipment_receipt = equipment_receipt
                     student.insurance_paid = insurance
                     student.insurance_amount = insurance_amt
                     if not insurance:

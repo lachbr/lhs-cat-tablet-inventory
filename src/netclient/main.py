@@ -42,6 +42,10 @@ class ServerConnection(BaseServerConnection):
     def get_identity(self):
         return CLIENT_NET_ASSISTANT
         
+    def handle_lost_connection(self):
+        QtWidgets.QMessageBox.critical(None, "Error", "Lost connection to server.")
+        sys.exit(1)
+        
     def handle_datagram(self, dgi, msg_type):
         if msg_type == MSG_SERVER_GET_ALL_TABLETS_RESP:
             g_main_window.handle_get_all_tablets_resp(dgi)
@@ -131,6 +135,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.__request_all_tablets()
         self.__request_all_users()
         
+        self.show_please_wait(text = "Populating tables...")
+        
     def __export_users_to_excel(self):
         filedlg = QtWidgets.QFileDialog(self, "Select export location", os.environ["USERPROFILE"] + "\\Desktop", "Excel File (*.xls)")
         filedlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
@@ -152,6 +158,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             sheet.write(0, 8, 'Insurance Paid')
             sheet.write(0, 9, 'Insurance Amount')
             sheet.write(0, 10, 'Insurance Date')
+            sheet.write(0, 11, 'Equipment Receipt')
             
             for i in range(len(self.students)):
                 student = self.students[i]
@@ -180,6 +187,7 @@ class ClientWindow(QtWidgets.QMainWindow):
                 sheet.write(row, 8, utils.bool_yes_no(student.insurance_paid))
                 sheet.write(row, 9, student.insurance_amount)
                 sheet.write(row, 10, student.date_of_insurance)
+                sheet.write(row, 11, utils.bool_yes_no(student.equipment_receipt))
             wb.save(export_path)
     
     def __handle_tablet_search_edited(self, text):
@@ -248,7 +256,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         elif mode == T_SEARCHMODE_SERIAL:
             return 2
         elif mode == T_SEARCHMODE_NAME:
-            return 4
+            return 5
             
     def get_column_for_user_search_mode(self):
         mode = self.user_search_mode
@@ -312,9 +320,11 @@ class ClientWindow(QtWidgets.QMainWindow):
         dlg = QtWidgets.QDialog(self)
         dlgconfig = net_editstudent.Ui_Dialog()
         dlgconfig.setupUi(dlg)
+        dlg.setWindowTitle("Edit User - %s" % user.name)
         self.__set_checkbox_state(dlgconfig.pcsbAgreementCheckBox, user.pcsb_agreement)
         self.__set_checkbox_state(dlgconfig.catAgreementCheckBox, user.cat_agreement)
         self.__set_checkbox_state(dlgconfig.insuranceCheckBox, user.insurance_paid)
+        self.__set_checkbox_state(dlgconfig.equipmentReceiptCheck, user.equipment_receipt)
         dlgconfig.insuranceAmountEdit.setText(user.insurance_amount)
 
         links = [link for link in self.student_tablet_links if link.student_guid == guid]
@@ -354,6 +364,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             dg.add_uint8(has_insurance)
             dg.add_string(dlgcfg.insuranceAmountEdit.text())
             dg.add_string(dlgcfg.tabletPCSBEdit.text())
+            dg.add_uint8(dlgcfg.equipmentReceiptCheck.checkState() != 0)
             if has_insurance and (student and not student.insurance_paid):
                 print("Student now has insurance")
                 dg.add_string(utils.get_date_string())
@@ -411,13 +422,13 @@ class ClientWindow(QtWidgets.QMainWindow):
         dg.add_uint16(MSG_CLIENT_GET_ALL_USERS)
         g_server_connection.send(dg)
         
-    def show_please_wait(self):
+    def show_please_wait(self, title = "Information", text = "Please wait..."):
         self.hide_please_wait()
         
         self.please_wait_dialog = QtWidgets.QMessageBox(self)
         self.please_wait_dialog.setStandardButtons(QtWidgets.QMessageBox.NoButton)
-        self.please_wait_dialog.setText("Please wait...")
-        self.please_wait_dialog.setWindowTitle("Information")
+        self.please_wait_dialog.setText(text)
+        self.please_wait_dialog.setWindowTitle(title)
         self.please_wait_dialog.open()
         
     def hide_please_wait(self):
@@ -516,6 +527,7 @@ class ClientWindow(QtWidgets.QMainWindow):
         userView.setItem(i, 8, ADTableWidgetItem(guid, utils.bool_yes_no(insurance_paid)))
         userView.setItem(i, 9, ADTableWidgetItem(guid, insurance_amount))
         userView.setItem(i, 10, ADTableWidgetItem(guid, student.date_of_insurance))
+        userView.setItem(i, 11, ADTableWidgetItem(guid, utils.bool_yes_no(student.equipment_receipt)))
         userView.setSortingEnabled(True)
         
     def generate_student_table_ui(self):
@@ -622,6 +634,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         if not self.tablet_table_generated:
             self.generate_tablet_table_ui()
             
+        self.hide_please_wait()
+            
     def update_tablet_row_ui(self, i, tablet):
         guid = tablet.guid
         pcsb = tablet.pcsb_tag
@@ -644,9 +658,11 @@ class ClientWindow(QtWidgets.QMainWindow):
             name = "Unassigned"
         issues = [issue for issue in self.issues if issue.tablet_guid == tablet.guid]
         active_issue = False
+        issue_problems = ""
         for issue in issues:
             if not issue.resolved:
                 active_issue = True
+                issue_problems = issue.problems_desc
                 break
         if active_issue:
             issue = "Active Issue"
@@ -658,7 +674,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.ui.tabletView.setItem(i, 1, ADTableWidgetItem(guid, device))
         self.ui.tabletView.setItem(i, 2, ADTableWidgetItem(guid, serial))
         self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
-        self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, name))
+        self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, issue_problems))
+        self.ui.tabletView.setItem(i, 5, ADTableWidgetItem(guid, name))
         self.ui.tabletView.setSortingEnabled(True)
             
     def generate_tablet_table_ui(self):
@@ -734,7 +751,8 @@ class NetClientApp(QtWidgets.QApplication):
         global g_server_connection
         global g_main_window
         
-        self.server_connection = ServerConnection('c2031svcat2', 7035)
+        host = 'c2031svcat2'
+        self.server_connection = ServerConnection(host, 7035)
         # Timer which ticks the connection to the server
         self.server_timer = QtCore.QTimer()
         self.server_timer.timeout.connect(self.server_connection.run)

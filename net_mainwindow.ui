@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1124</width>
-    <height>798</height>
+    <width>1307</width>
+    <height>814</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -120,7 +120,7 @@
               <number>0</number>
              </property>
              <property name="columnCount">
-              <number>5</number>
+              <number>6</number>
              </property>
              <attribute name="horizontalHeaderCascadingSectionResizes">
               <bool>false</bool>
@@ -146,6 +146,11 @@
              <column>
               <property name="text">
                <string>Active Issue</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Problems</string>
               </property>
              </column>
              <column>
@@ -280,7 +285,7 @@
               <number>0</number>
              </property>
              <property name="columnCount">
-              <number>11</number>
+              <number>12</number>
              </property>
              <attribute name="horizontalHeaderStretchLastSection">
               <bool>true</bool>
@@ -338,6 +343,11 @@
              <column>
               <property name="text">
                <string>Date of Insurance</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Equipment Receipt</string>
               </property>
              </column>
             </widget>
