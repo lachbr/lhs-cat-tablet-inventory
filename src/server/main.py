@@ -15,7 +15,7 @@ import sqlite3
 g_server_connection = None
 
 EXCEL_IMPORT = False
-SYNC_ACTIVE_DIRECTORY = False
+SYNC_ACTIVE_DIRECTORY = True
 WIPE_DB = False
 
 class Student:
@@ -297,6 +297,8 @@ class Server:
             
         if EXCEL_IMPORT:
             self.__import_excel()
+            
+        self.__check_link_singularities()
         
         print("Server is now running.")
         
@@ -365,6 +367,26 @@ class Server:
         self.db_connection.commit()
         print("Local database wiped")
         
+    def __check_link_singularities(self):
+        """
+        Make sure that all student/tablet links reference valid students and tablets.
+        If a link references a nonexistent student or tablet, the link will be removed.
+        """
+        c = self.db_connection.cursor()
+        c.execute("SELECT * FROM StudentTabletLink")
+        links = c.fetchall()
+        for link in links:
+            student_guid = link[0]
+            tablet_guid = link[1]
+            # Ensure both the student and tablet exist
+            student = Student.from_guid(student_guid)
+            tablet = Tablet.from_guid(tablet_guid)
+            if (not student) or (not tablet):
+                c.execute("DELETE FROM StudentTabletLink WHERE StudentGUID = ? AND TabletGUID = ?", (student_guid, tablet_guid))
+                print("Deleting student/tablet link that references nonexistent student or tablet.")
+                
+        self.db_connection.commit()
+        
     def __sync_user_db(self):
         """Makes sure our local database contains all of the Active Directory users."""
         print("Syncing local user database with Active Directory...")
@@ -389,6 +411,13 @@ class Server:
                 # Removed student
                 c.execute("DELETE FROM Student WHERE GUID = ?", (guid,))
                 print("Removed deleted student", guid)
+                
+                # Remove their tablet link
+                c.execute("SELECT FROM StudentTabletLink WHERE StudentGUID = ?", (guid,))
+                link = c.fetchone()
+                if link:
+                    c.execute("DELETE FROM StudentTabletLink WHERE StudentGUID = ?", (guid,))
+                    print("\tRemoved student/tablet link for removed student")
                 
         self.db_connection.commit()
         
@@ -424,6 +453,13 @@ class Server:
                 # Dead tablet
                 c.execute("DELETE FROM Tablet WHERE GUID = ?", (guid,))
                 print("Removed deleted tablet")
+                
+                # Remove their tablet link
+                c.execute("SELECT FROM StudentTabletLink WHERE TabletGUID = ?", (guid,))
+                link = c.fetchone()
+                if link:
+                    c.execute("DELETE FROM StudentTabletLink WHERE TabletGUID = ?", (guid,))
+                    print("\tRemoved student/tablet link for removed tablet")
                 
         self.db_connection.commit()
         
@@ -826,7 +862,7 @@ class Server:
                     tablet_pcsb = dgi.get_string()
                     equipment_receipt = dgi.get_uint8()
                     
-                    error = False
+                    error = 0
                     
                     student = Student.from_guid(guid)
                     
@@ -848,7 +884,7 @@ class Server:
                     if len(tablet_pcsb) > 0:
                         tablet = Tablet.from_pcsb_tag(tablet_pcsb)
                         if not tablet:
-                            error = True
+                            error = 1
                         else:
                             student.tablet_guid = Tablet.from_pcsb_tag(tablet_pcsb).guid
                     else:
@@ -858,16 +894,19 @@ class Server:
                     dg = core.Datagram()
                     dg.add_uint16(MSG_SERVER_FINISH_EDIT_USER_RESP)
 
-                    if not error:
+                    if error == 0:
                         try:
                             student.update_link()
                             dg.add_uint8(1)
                         except Exception as e:
-                            error = True
+                            error = 2
                             
-                    if error:
+                    if error == 1:
                         dg.add_uint8(0)
-                        dg.add_string("There was an error assigning the tablet: already assigned or bad PCSB Tag")
+                        dg.add_string("There was an error assigning the tablet: bad PCSB Tag")
+                    elif error == 2:
+                        dg.add_uint8(0)
+                        dg.add_string("There was an error assigning the tablet: already assigned")
                         
                     self.writer.send(dg, connection)
                     
