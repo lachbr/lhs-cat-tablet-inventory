@@ -18,7 +18,7 @@
     <item row="9" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -120,7 +120,7 @@
               <number>0</number>
              </property>
              <property name="columnCount">
-              <number>6</number>
+              <number>8</number>
              </property>
              <attribute name="horizontalHeaderCascadingSectionResizes">
               <bool>false</bool>
@@ -156,6 +156,16 @@
              <column>
               <property name="text">
                <string>Assignee</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Returned</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Notes</string>
               </property>
              </column>
             </widget>

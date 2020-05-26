@@ -2,10 +2,9 @@
 
 # Form implementation generated from reading ui file 'net_edittablet.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.0
+# Created by: PyQt5 UI code generator 5.12.2
 #
 # WARNING! All changes made in this file will be lost!
-
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -13,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_EditTabletDialog(object):
     def setupUi(self, EditTabletDialog):
         EditTabletDialog.setObjectName("EditTabletDialog")
-        EditTabletDialog.resize(533, 393)
+        EditTabletDialog.resize(533, 574)
         self.gridLayout = QtWidgets.QGridLayout(EditTabletDialog)
         self.gridLayout.setObjectName("gridLayout")
         self.buttonBox = QtWidgets.QDialogButtonBox(EditTabletDialog)
@@ -38,10 +37,13 @@ class Ui_EditTabletDialog(object):
         self.formLayout.setWidget(4, QtWidgets.QFormLayout.SpanningRole, self.serialNoEntry)
         self.label_3 = QtWidgets.QLabel(EditTabletDialog)
         self.label_3.setObjectName("label_3")
-        self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_3)
-        self.studentCombo = QtWidgets.QComboBox(EditTabletDialog)
-        self.studentCombo.setObjectName("studentCombo")
-        self.formLayout.setWidget(6, QtWidgets.QFormLayout.SpanningRole, self.studentCombo)
+        self.formLayout.setWidget(7, QtWidgets.QFormLayout.LabelRole, self.label_3)
+        self.teNotes = QtWidgets.QTextEdit(EditTabletDialog)
+        self.teNotes.setObjectName("teNotes")
+        self.formLayout.setWidget(8, QtWidgets.QFormLayout.SpanningRole, self.teNotes)
+        self.chkTabletReturned = QtWidgets.QCheckBox(EditTabletDialog)
+        self.chkTabletReturned.setObjectName("chkTabletReturned")
+        self.formLayout.setWidget(6, QtWidgets.QFormLayout.LabelRole, self.chkTabletReturned)
         self.groupBox = QtWidgets.QGroupBox(EditTabletDialog)
         self.groupBox.setObjectName("groupBox")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.groupBox)
@@ -72,7 +74,7 @@ class Ui_EditTabletDialog(object):
         self.activeIssueLabel.setFont(font)
         self.activeIssueLabel.setObjectName("activeIssueLabel")
         self.gridLayout_2.addWidget(self.activeIssueLabel, 0, 0, 1, 1)
-        self.formLayout.setWidget(7, QtWidgets.QFormLayout.SpanningRole, self.groupBox)
+        self.formLayout.setWidget(5, QtWidgets.QFormLayout.SpanningRole, self.groupBox)
         self.gridLayout.addLayout(self.formLayout, 0, 1, 1, 1)
 
         self.retranslateUi(EditTabletDialog)
@@ -87,7 +89,8 @@ class Ui_EditTabletDialog(object):
         self.deviceModelEntry.setPlaceholderText(_translate("EditTabletDialog", "Example: Dell Latitude 5285"))
         self.se.setText(_translate("EditTabletDialog", "Serial Number"))
         self.serialNoEntry.setPlaceholderText(_translate("EditTabletDialog", "Example: 6LR23M2"))
-        self.label_3.setText(_translate("EditTabletDialog", "Assigned Student"))
+        self.label_3.setText(_translate("EditTabletDialog", "Notes"))
+        self.chkTabletReturned.setText(_translate("EditTabletDialog", "Tablet Returned"))
         self.groupBox.setTitle(_translate("EditTabletDialog", "Issues"))
         item = self.issueTable.horizontalHeaderItem(0)
         item.setText(_translate("EditTabletDialog", "Date"))
@@ -96,3 +99,5 @@ class Ui_EditTabletDialog(object):
         item = self.issueTable.horizontalHeaderItem(2)
         item.setText(_translate("EditTabletDialog", "Resolved"))
         self.activeIssueLabel.setText(_translate("EditTabletDialog", "Active Issue: Yes"))
+
+

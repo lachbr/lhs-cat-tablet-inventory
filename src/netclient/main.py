@@ -295,7 +295,7 @@ class ClientWindow(QtWidgets.QMainWindow):
             if item.column() == column:
                 table.showRow(item.row())
         
-    def __set_checkbox_state(self, cbox, string):
+    def set_checkbox_state(self, cbox, string):
         if isinstance(string, str):
             flag = bool(int(string))
         else:
@@ -321,10 +321,10 @@ class ClientWindow(QtWidgets.QMainWindow):
         dlgconfig = net_editstudent.Ui_Dialog()
         dlgconfig.setupUi(dlg)
         dlg.setWindowTitle("Edit User - %s" % user.name)
-        self.__set_checkbox_state(dlgconfig.pcsbAgreementCheckBox, user.pcsb_agreement)
-        self.__set_checkbox_state(dlgconfig.catAgreementCheckBox, user.cat_agreement)
-        self.__set_checkbox_state(dlgconfig.insuranceCheckBox, user.insurance_paid)
-        self.__set_checkbox_state(dlgconfig.equipmentReceiptCheck, user.equipment_receipt)
+        self.set_checkbox_state(dlgconfig.pcsbAgreementCheckBox, user.pcsb_agreement)
+        self.set_checkbox_state(dlgconfig.catAgreementCheckBox, user.cat_agreement)
+        self.set_checkbox_state(dlgconfig.insuranceCheckBox, user.insurance_paid)
+        self.set_checkbox_state(dlgconfig.equipmentReceiptCheck, user.equipment_receipt)
         dlgconfig.insuranceAmountEdit.setText(user.insurance_amount)
 
         links = [link for link in self.student_tablet_links if link.student_guid == guid]
@@ -676,6 +676,8 @@ class ClientWindow(QtWidgets.QMainWindow):
         self.ui.tabletView.setItem(i, 3, ADTableWidgetItem(guid, issue))
         self.ui.tabletView.setItem(i, 4, ADTableWidgetItem(guid, issue_problems))
         self.ui.tabletView.setItem(i, 5, ADTableWidgetItem(guid, name))
+        self.ui.tabletView.setItem(i, 6, ADTableWidgetItem(guid, utils.bool_yes_no(tablet.returned)))
+        self.ui.tabletView.setItem(i, 7, ADTableWidgetItem(guid, tablet.notes))
         self.ui.tabletView.setSortingEnabled(True)
             
     def generate_tablet_table_ui(self):

@@ -15,7 +15,7 @@ import sqlite3
 g_server_connection = None
 
 EXCEL_IMPORT = False
-SYNC_ACTIVE_DIRECTORY = False
+SYNC_ACTIVE_DIRECTORY = True
 WIPE_DB = False
 
 class Student:
@@ -215,8 +215,11 @@ class Tablet(BaseTablet):
         link = c.fetchone()
         if link:
             student_guid = link[0]
+            
+        returned = tablet_info[3] if len(tablet_info) >= 4 else None
+        notes = tablet_info[4] if len(tablet_info) >= 5 else None
         
-        return Tablet(ad_tablet.guid_str, pcsb_tag, tablet_info[1], tablet_info[2], student_guid, ad_tablet)
+        return Tablet(ad_tablet.guid_str, pcsb_tag, tablet_info[1], tablet_info[2], returned, notes, student_guid, ad_tablet)
         
     @staticmethod
     def from_pcsb_tag(pcsb_tag):
@@ -227,8 +230,8 @@ class Tablet(BaseTablet):
     def update(self):
         c = g_server_connection.db_connection.cursor()
         c.execute(
-            "UPDATE Tablet SET SerialNumber = ?, DeviceModel = ? WHERE GUID = ?",
-            (self.serial, self.device_model, self.guid)
+            "UPDATE Tablet SET SerialNumber = ?, DeviceModel = ?, Returned = ?, Notes = ? WHERE GUID = ?",
+            (self.serial, self.device_model, self.returned, self.notes, self.guid)
         )
         g_server_connection.db_connection.commit()
         

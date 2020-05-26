@@ -37,6 +37,8 @@ class TabletEditing:
         dlg.setWindowTitle("Edit Tablet - %s" % self.tablet.pcsb_tag)
         dlgcfg.deviceModelEntry.setText(self.tablet.device_model)
         dlgcfg.serialNoEntry.setText(self.tablet.serial)
+        dlgcfg.teNotes.setText(self.tablet.notes)
+        self.mgr.set_checkbox_state(dlgcfg.chkTabletReturned, self.tablet.returned)
         self.generate_issue_table_ui(self.get_issue_list(), dlgcfg)
         dlg.finished.connect(self.__handle_edit_tablet_finish)
         dlgcfg.issueTable.itemDoubleClicked.connect(self.__handle_double_click_issue)
@@ -77,6 +79,8 @@ class TabletEditing:
             mod_tablet = self.tablet
             mod_tablet.device_model = dlgcfg.deviceModelEntry.text()
             mod_tablet.serial = dlgcfg.serialNoEntry.text()
+            mod_tablet.notes = dlgcfg.teNotes.toPlainText()
+            mod_tablet.returned = dlgcfg.chkTabletReturned.checkState() != 0
             self.mod_tablet = mod_tablet
         
             # send all the modifications
